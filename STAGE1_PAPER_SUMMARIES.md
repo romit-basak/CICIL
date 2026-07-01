@@ -25,7 +25,7 @@ arXiv: https://arxiv.org/abs/2402.05374 · IJCAI: https://www.ijcai.org/proceedi
 ### 3. RAVENEA (Yuan et al., 2025) — `yuan2025ravenea`
 arXiv: https://arxiv.org/abs/2505.14462
 - **What it does:** Benchmark for retrieval-augmented visual culture understanding; defines two tasks — culture-focused VQA (cVQA) and **culture-informed image captioning (cIC)**. Extends datasets with **11,396** human-ranked Wikipedia docs over 8 countries / 11 cultural categories; evaluates 7 retrievers and 15 VLMs.
-- **Key numbers:** Culture-aware retrieval improves lightweight VLMs by **≥+3.2% absolute on cVQA** and **≥+6.2% absolute on cIC** (published EMNLP 2025 figures; the earlier preprint reported +6%/+11%).
+- **Key numbers:** Culture-aware retrieval improves lightweight VLMs by **≥+3.2% absolute on cVQA** and **≥+6.2% absolute on cIC** (published ICLR 2026 figures; the earlier preprint reported +6%/+11%).
 - **Relevance to us:** Strongest external validation of our **core novel contribution** — coupling cultural annotations to retrieval. They show culture-aware retrieval beats non-augmented VLMs on captioning; we extend this by sourcing the cultural index keys from Stage 1's VQA output rather than generic text.
 - **Cite for:** evidence that culture-aware retrieval helps captioning; definition of culture-informed captioning as a task; bridge between my Stage 1 and Mehek's Stage 2.
 

@@ -94,7 +94,7 @@ If I only formally cover 6 in the preliminary paper, the strongest set covering 
 |---|-------|-------|---------------|
 | 1 | CultureCLIP | COLM 2025 | https://openreview.net/forum?id=cWVpXWARbt |
 | 2 | CIC | IJCAI 2024 | https://www.ijcai.org/proceedings/2024/180 |
-| 3 | RAVENEA | EMNLP 2025 Findings *(see note)* | https://wenyanli.org/publication/emnlp2025-revenea/ |
+| 3 | RAVENEA | ICLR 2026 | https://openreview.net/forum?id=4zAbkxQ23i |
 | 4 | SmolVLM | arXiv tech report (no peer-reviewed venue) | https://arxiv.org/abs/2504.05299 |
 | 5 | LoRA | ICLR 2022 | https://openreview.net/forum?id=nZeVKeeFYf9 |
 | 6 | SigLIP | ICCV 2023 | https://openaccess.thecvf.com/content/ICCV2023/html/Zhai_Sigmoid_Loss_for_Language_Image_Pre-Training_ICCV_2023_paper.html |
@@ -109,7 +109,7 @@ If I only formally cover 6 in the preliminary paper, the strongest set covering 
 | 15 | GPT-4V Visual Culture Probing | OpenReview (workshop) | https://openreview.net/forum?id=PCYP1Of3We |
 
 **Notes / caveats:**
-- **#3 RAVENEA:** the author's page tags it **EMNLP 2025 Findings**, but a later OpenReview PDF carries an **ICLR 2026** camera-ready header — confirm the canonical venue before citing. Its published numbers were also revised down to **+3.2% (cVQA) / +6.2% (cIC)** absolute from the earlier preprint's +6%/+11%.
+- **#3 RAVENEA:** published at **ICLR 2026** (camera-ready header confirmed; author's blog links the arXiv version with the same header). Cite as **2026**, not the 2025 arXiv year. Its published numbers were also revised down to **+3.2% (cVQA) / +6.2% (cIC)** absolute from the earlier preprint's +6%/+11%.
 - **#4 SmolVLM** and **#8 Qwen2.5-VL** are technical reports with no peer-reviewed venue — arXiv is the canonical citation.
 - **#14** (`2505.22793`) is a position paper, arXiv-only. Do not confuse it with Yadav et al.'s separate NAACL 2025 Findings paper "Beyond Words: Exploring Cultural Value Sensitivity in Multimodal Models" — that's a different paper.
 - For ACL Anthology and CVF entries, swap `/forum`/`/virtual` for the PDF/`.bib` link when generating BibTeX (the Anthology pages have a "Cite (ACL)" BibTeX button).
