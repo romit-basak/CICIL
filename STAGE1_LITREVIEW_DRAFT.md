@@ -6,7 +6,7 @@ The systemic cultural blind spots of generic vision–language models (VLMs) tra
 
 Liu et al. (2021) formalized the consequences of this data bias through MaRVL, demonstrating that cross-lingual and cross-cultural transfer in visual reasoning falls drastically short of English-baseline performance. Similarly, Romero et al. (2024) introduced CVQA—a benchmark co-created with native speakers across 30 countries—confirming that culturally diverse visual question answering remains an open challenge for state-of-the-art models.
 
-This representational bottleneck is precisely what the winning CICIL system uncovers but leaves unresolved: generic visual encoders strip out nuanced cultural semantics before the downstream translation phase even begins. Stage 1 of our proposed pipeline addresses this limitation, allowing us to evaluate whether mitigating this initial information loss yields measurable gains in end-to-end caption quality (**RQ1**).
+This representational bottleneck is precisely what the winning CICIL system (Dhawan et al., 2026) uncovers but leaves unresolved: its two-stage pipeline produces the Spanish intermediate with a generic Qwen2.5-VL encoder, so cultural semantics are stripped out before the downstream translation phase even begins. Stage 1 of our proposed pipeline addresses this limitation, allowing us to evaluate whether mitigating this initial information loss yields measurable gains in end-to-end caption quality (**RQ1**).
 
 ### Interventions at the Vision Layer
 
@@ -44,6 +44,7 @@ These documented performance disparities provide us with both a structural templ
 
 ## References (this section)
 
+- Dhawan, A., et al. (2026). Retrieval-Augmented Long-Context Translation for Cultural Image Captioning: Gators Submission for AmericasNLP 2026 Shared Task. *Proceedings of the Sixth Workshop on NLP for Indigenous Languages of the Americas (AmericasNLP); arXiv:2605.20626.* https://arxiv.org/abs/2605.20626
 - Hu, E. J., Shen, Y., Wallis, P., Allen-Zhu, Z., Li, Y., Wang, S., Wang, L., and Chen, W. (2022). LoRA: Low-Rank Adaptation of Large Language Models. *ICLR 2022.* https://openreview.net/forum?id=nZeVKeeFYf9
 - Huang, Y., Fan, Z., He, Z., Polisetty, S., Li, W., and Fung, Y. R. (2025). CultureCLIP: Empowering CLIP with Cultural Awareness through Synthetic Images and Contextualized Captions. *COLM 2025.* https://openreview.net/forum?id=cWVpXWARbt
 - Li, J., Yuan, Y., Li, W., et al. (2026). RAVENEA: A Benchmark for Multimodal Retrieval-Augmented Visual Culture Understanding. *ICLR 2026.* https://openreview.net/forum?id=4zAbkxQ23i

@@ -1,0 +1,17 @@
+# Python / uv
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Data (CC BY-NC 4.0 shared-task data — not redistributed via this repo)
+data/
+images/
+
+# Generated Stage 1 outputs: version the prediction JSONLs (the Stage 2 hand-off
+# to Mehek), but keep logs and trained adapters out of the repo.
+outputs/*.log
+outputs/adapters/
+
+# OS
+.DS_Store

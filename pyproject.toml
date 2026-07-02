@@ -1,0 +1,27 @@
+[project]
+name = "cicil"
+version = "0.1.0"
+description = "Culturally-Aware Visual Captioning for Indigenous Languages (AmericasNLP 2026 CICIL) — Stage 1: Vision & VLM"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "accelerate>=1.14.0",
+    "datasets>=5.0.0",
+    "huggingface-hub>=1.21.0",
+    "matplotlib>=3.11.0",
+    "ollama>=0.6.2",
+    "pandas>=3.0.3",
+    "peft>=0.19.1",
+    "pillow>=12.3.0",
+    "qwen-vl-utils>=0.0.14",
+    "sacrebleu>=2.6.0",
+    "safetensors>=0.8.0",
+    "seaborn>=0.13.2",
+    "torch>=2.12.1",
+    "torchvision>=0.27.1",
+    "tqdm>=4.68.3",
+    "transformers>=5.12.1",
+]
+
+[dependency-groups]
+# GPU-only extras (installed on GCP T4, not on the local Mac venv): QLoRA support.
+gpu = ["bitsandbytes"]

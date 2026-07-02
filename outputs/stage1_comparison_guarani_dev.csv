@@ -1,0 +1,2 @@
+id,gen_tokens,cvqa_tokens,annot_tokens,gen_materials,cvqa_materials,gen_culture_on,gen_culture_off,cvqa_culture_on,cvqa_culture_off,divergence_chrfpp,gen_chrfpp_gold,cvqa_chrfpp_gold
+grn_001,47,122,958,2,2,0,0,1,2,25.4,,
