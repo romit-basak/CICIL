@@ -208,8 +208,14 @@ def _chrfpp_vs_gold(lang: str, split: str, generic: dict[str, dict],
                   f"a mode has too many empty outputs ({max_empty_frac:.0%}); "
                   "fix generation and re-run before trusting this number.")
         else:
-            verdict = ("cultural-VQA helps" if delta > 0
-                       else "cultural-VQA HURTS" if delta < 0 else "no difference")
+            # A dead-band avoids reporting a sub-point difference as a win/loss;
+            # ChrF++ swings this much from noise even under deterministic decoding.
+            if abs(delta) < 0.5:
+                verdict = "no meaningful difference (parity)"
+            elif delta > 0:
+                verdict = "cultural-VQA helps"
+            else:
+                verdict = "cultural-VQA hurts"
             print(f"  delta (cultural − generic) = {delta:+.2f}   → {verdict}")
     return results
 
