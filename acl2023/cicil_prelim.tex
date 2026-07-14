@@ -1,0 +1,321 @@
+% CICIL 2026 — Preliminary paper (review version). Compile with:
+%   pdflatex cicil_prelim ; bibtex cicil_prelim ; pdflatex cicil_prelim ; pdflatex cicil_prelim
+\pdfoutput=1
+\documentclass[11pt]{article}
+% Final (named) version: omit "review" so author names show and line numbers are
+% off. Re-add [review] if the course wants line numbers (but that anonymizes authors).
+\usepackage{ACL2023}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{inconsolata}
+\usepackage{booktabs}
+\usepackage{graphicx}
+
+\title{Culturally-Aware Image Captioning for Indigenous Languages of the Americas:\\
+A Two-Stage Vision-and-Retrieval Pipeline}
+
+\author{Romit Basak \and Mehak Santosh Talmale \and Nandita Mahendra \and Tisha Patel \\
+  Khoury College of Computer Sciences, Northeastern University \\
+  \texttt{\{basak.r, talmale.m, mahendra.na, patel.tisha\}@northeastern.edu}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Generic vision–language models (VLMs) discard culturally specific visual
+information before it can reach a downstream translator, a bottleneck exposed
+but left unresolved by the winning system of the AmericasNLP 2026 Cultural
+Image Captioning for Indigenous Languages (CICIL) shared task. We describe a
+two-stage pipeline that attacks this gap at the vision stage: Stage~1 uses a
+structured \emph{cultural visual-question-answering} (VQA) prompt to elicit a
+culturally grounded Spanish description together with per-category cultural
+annotations; Stage~2 uses those annotations as retrieval keys and translates to
+the target language with Gemini~2.5~Flash. We report preliminary results over
+five languages (Guaraní, Bribri, Yucatec Maya, Wixárika, Nahuatl). On an
+intrinsic Spanish-side proxy (Wixárika pilot, $n{=}20$) concise cultural-VQA
+matches a generic baseline (20.9 vs.\ 21.0 ChrF++). End-to-end, cultural-VQA
+yields no consistent improvement over the generic control: four of five
+languages fall within $\pm 0.6$ ChrF++ (noise level) and only Nahuatl shows a
+clear gain ($+1.56$), for a mean $\Delta$ of $+0.20$. We discuss why—including
+an incomplete retrieval bank and greedy-decoding degeneration on the lowest-
+resource languages—and outline the controlled experiments these preliminary
+findings motivate.
+\end{abstract}
+
+\section{Introduction}
+The CICIL shared task \citep{bui2026cicil} asks systems to caption culturally
+situated images directly in an indigenous language of the Americas (Guaraní,
+Yucatec Maya, Bribri, or Wixárika). The winning ``Gators'' submission
+\citep{dhawan2026gators} established a strong two-stage recipe—generate a
+Spanish intermediate description with a generic VLM, then translate with a
+retrieval-augmented LLM—but its own analysis identifies the \emph{vision} stage
+as the bottleneck: a generic Qwen2.5-VL encoder \citep{qwen2025qwen25vl}
+produces the Spanish intermediate, so culturally specific semantics are stripped
+out before translation begins.
+
+We target exactly this gap. Our pipeline keeps the two-stage structure but makes
+Stage~1 culturally aware through a structured cultural-VQA prompt that
+interrogates the image (ceremony, material culture, landscape, kinship) before
+synthesizing a Spanish description, and emits the per-category answers as
+structured annotations that become Stage~2 retrieval keys. We ask three
+research questions. \textbf{RQ1:} does culturally-aware vision encoding improve
+end-to-end caption quality over a generic-VLM baseline? \textbf{RQ2:} does the
+benefit vary with language resource level? \textbf{RQ3:} which cultural
+categories are hardest to ground, and does this track caption quality? This
+preliminary paper contributes (i) the pipeline and its cultural-VQA module,
+(ii) an exploratory analysis of the CICIL data, and (iii) first end-to-end
+baseline numbers—reported honestly, including where the intervention does
+\emph{not} help.
+
+\section{Related Work}
+
+\subsection{Vision and Cultural Grounding}
+Generic VLMs trained on Western, English-dominated web data carry systematic
+cultural blind spots. Contrastive pretraining with CLIP \citep{radford2021clip}
+yields cross-modal representations skewed toward that distribution, and
+\citet{liu2021marvl} formalize the downstream cost through MaRVL, showing that
+cross-lingual, cross-cultural visual reasoning falls far short of English
+baselines. \citet{romero2024cvqa} confirm with CVQA—co-created with native
+speakers across 30 countries—that culturally diverse visual QA remains open for
+state-of-the-art models. This representational bottleneck is what
+\citet{dhawan2026gators} uncover but leave unresolved.
+
+Prior interventions typically act at the vision encoder.
+\citet{huang2025cultureclip} build CulTwin, a synthetic set of visually similar
+but culturally distinct triplets, and fine-tune CLIP with a tailored contrastive
+objective for up to 5.49\% gains in fine-grained cultural concept recognition.
+Contrastive encoder retraining, however, needs large curated image sets that our
+$\sim$50-example-per-language budget cannot support; we therefore freeze the
+SigLIP encoder \citep{zhai2023siglip} of SmolVLM
+\citep{marafioti2025smolvlm} and inject cultural signal into the decoder via
+prompting and LoRA \citep{hu2022lora}. A complementary line queries visual
+content before captioning: the CIC framework \citep{yun2024cic} extracts
+cultural elements via VQA and synthesizes a description with an LLM. Our
+cultural-VQA module is a direct descendant, but specializes the question set to
+the Americas and, crucially, repurposes its outputs as retrieval keys rather
+than as terminal captions. \citet{li2026ravenea} (RAVENEA) show that
+\emph{culture-aware retrieval} improves lightweight VLMs by $\geq$3.2\% on
+cultural VQA and 6.2\% on cultural captioning, motivating our design in which
+cultural grounding steers—rather than runs parallel to—retrieval. Finally,
+category-stratified benchmarks (CulturalVQA, \citealp{nayak2024culturalvqa};
+GIMMICK, \citealp{schneider2025gimmick}) report that tangible artifacts are
+grounded more reliably than intangible practices, giving us a prior for RQ3 and,
+with cultural theory \citep{yadav2025cultural}, a basis for our human-evaluation
+rubric.
+
+\subsection{Cultural Taxonomies}
+\citet{hershcovich2022culture} frame culture in NLP along linguistic form,
+values, common ground, and aboutness, arguing that serving a language means
+serving its cultural context—captioning in Guaraní or Bribri is thus a cultural
+grounding problem, not only translation. \citet{liu2025culturaltaxonomy} offer a
+finer taxonomy grounded in anthropology and survey where NLP resources are
+missing (non-Western, endangered, oral communities). We operationalize these
+descriptive frameworks as a small set of \emph{visual question prompts}
+(ceremony, material culture, landscape, kinship) derived, following CIC
+\citep{yun2024cic}, from ethnographic documentation of the target communities.
+
+\subsection{Retrieval, Prompting, and Evaluation}
+\citet{agrawal2023icl} show that semantic similarity and diversity of in-context
+examples both matter for MT, motivating retrieval by cultural concept rather than
+surface text. \citet{merx2024mambai} obtain strong low-resource gains from
+retrieval-augmented LLM prompting for Mambai but document a sharp in-domain vs.\
+out-of-domain gap—directly relevant given that our indigenous corpora are drawn
+from formal/religious registers \citep{mager2021americasnlp}. Our retrieval uses
+multilingual Sentence-BERT embeddings \citep{reimers2020multilingual}, which
+\citet{nie2022parc} find outperform sparse BM25 for morphologically rich
+low-resource pairs. For evaluation we adopt ChrF++ \citep{popovic2017chrfpp}, the
+official CICIL metric \citep{bui2026cicil}, which awards partial credit for
+morphological variants; \citet{kumar2026chrf} caution that character metrics can
+mask hallucination, source-copying, and repetition, which we corroborate below.
+Our reporting layout follows per-language templates such as SemEval-2025 Task~11
+\citep{muhammad2025semeval} and the AmericasNLP translation tasks
+\citep{ebrahimi2023americasnlp,ebrahimi2024americasnlp}, and our human-evaluation
+design follows the transparent, rubric-piloted protocol of THumB
+\citep{kasai2022thumb}.
+
+\section{Data and Exploratory Analysis}
+The CICIL pilot/dev data are extremely small: the dev split provides 50 images
+each for Guaraní, Bribri, Yucatec Maya, and Nahuatl, while Wixárika is supplied
+only as a 20-image \emph{pilot}—and that pilot is the sole split carrying gold
+Spanish captions (used as our Stage~1 proxy). Stage~2 retrieval banks come from
+prior shared tasks and vary by orders of magnitude
+(Table~\ref{tab:eda}): Guaraní is best resourced ($\sim$53k pairs,
+\citealp{ebrahimi2023americasnlp}), Bribri and Wixárika far smaller
+($\sim$7.5k/$\sim$9k, \citealp{mager2021americasnlp}), and Maya/Nahuatl banks are
+still being assembled. Caption lengths differ substantially (Guaraní 21.6 words
+on average vs.\ Maya 11.3); because the targets differ in morphological
+typology, raw word counts are not comparable across languages, reinforcing our
+use of character-level ChrF++ and cautioning against cross-language score
+comparison.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Language} & \textbf{Dev} & \textbf{Cap.\ len} & \textbf{Bank pairs} \\
+\midrule
+Guaraní       & 50            & 21.6 & 53{,}183 \\
+Bribri        & 50            & 14.9 & 7{,}506 \\
+Yucatec Maya  & 50            & 11.3 & TBD \\
+Nahuatl       & 50            & --   & TBD \\
+Wixárika      & 20$^{\dagger}$ & 13.7 & 8{,}967 \\
+\bottomrule
+\end{tabular}
+\caption{Exploratory analysis. ``Dev'' = examples in the split; ``Cap.\ len'' =
+mean gold caption length (words); ``Bank pairs'' = Stage~2 retrieval corpus size
+reported by the source shared task. $^{\dagger}$Wixárika ships as a 20-image
+pilot (the only split with gold Spanish).}
+\label{tab:eda}
+\end{table}
+
+\section{System}
+
+\subsection{Stage 1: Culturally-Aware Vision}
+Stage~1 turns an image into a culturally grounded Spanish description. The
+\textbf{cultural-VQA} module first asks category-specific questions (ceremony,
+material culture, landscape, kinship), then synthesizes the answers into a single
+concise Spanish sentence and retains the per-category answers as structured
+annotations. Our primary model is SmolVLM-2B \citep{marafioti2025smolvlm}: we
+freeze its SigLIP encoder \citep{zhai2023siglip} and adapt only the language
+decoder with LoRA \citep{hu2022lora} ($r{=}16$, $\alpha{=}32$, dropout $0.05$),
+which is tractable on a single T4 within a \$50 budget; the frozen-encoder design
+is exactly why cultural signal must enter through prompting rather than encoder
+re-alignment. As the RQ1 control we run an off-the-shelf Qwen2.5-VL
+\citep{qwen2025qwen25vl} with no cultural prompting. For these preliminary
+numbers, both arms are produced with Qwen2.5-VL-7B served locally; the LoRA
+fine-tune is in progress.
+
+\subsection{Stage 2: Culturally-Indexed Retrieval and Translation}
+Stage~2 encodes the Spanish side of each parallel corpus with
+\texttt{paraphrase-multilingual-MiniLM-L12-v2}
+\citep{reimers2020multilingual} into a FAISS inner-product index. The key design
+choice is that queries are built from Stage~1's \emph{cultural annotations} (for
+the generic arm, from the description itself), so retrieval targets cultural
+rather than surface similarity \citep{agrawal2023icl,li2026ravenea}. The top-$k$
+Spanish–indigenous pairs are supplied as few-shot demonstrations—most similar
+last \citep{agrawal2023icl}—to Gemini~2.5~Flash, which translates the Stage~1
+Spanish into the target language. No LLM fine-tuning is performed. We score with
+sacreBLEU ChrF++ (\texttt{word\_order=2}) matching the official CICIL scorer.
+
+\section{Preliminary Results}
+\paragraph{Official baseline (reference).} Recomputed with the official scorer,
+the shared-task baseline reaches 20.82 ChrF++ (Guaraní), 17.77 (Wixárika), 11.53
+(Nahuatl), and 7.57 (Bribri); Maya has no MT baseline. These are the reference
+points in Table~\ref{tab:rq1}.
+
+\paragraph{Stage 1 intrinsic quality.} Because the authors do not read the target
+languages, we first evaluate Stage~1 on its Spanish output against gold Spanish on
+the Wixárika pilot ($n{=}20$), isolating vision-and-grounding from translation
+(Table~\ref{tab:stage1}). A first cultural-VQA implementation
+\emph{underperformed} the generic baseline (16.2 vs.\ 21.0), which diagnostic
+analysis attributed to verbosity dilution—long, hedged syntheses (mean 105
+tokens vs.\ $\sim$35) penalized by character-F against short references.
+Constraining synthesis to one concise sentence (mean 25 tokens) closed the gap
+(20.9 vs.\ 21.0, $\Delta{=}-0.15$; parity) while removing internally
+inconsistent descriptions (0/20 vs.\ 2/20 naming incompatible materials). On this
+proxy, concise cultural-VQA matches the generic baseline without degrading it.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Stage 1 configuration} & \textbf{ChrF++} & \textbf{len} & \textbf{conflicts} \\
+\midrule
+Generic baseline          & 21.0 & 35  & 2/20 \\
+Cultural-VQA, verbose     & 16.2 & 105 & --   \\
+Cultural-VQA, concise     & 20.9 & 25  & 0/20 \\
+\bottomrule
+\end{tabular}
+\caption{Stage~1 intrinsic quality on the Wixárika pilot ($n{=}20$),
+Qwen2.5-VL-7B, temperature 0, ChrF++ vs.\ gold Spanish. ``len'' = mean length
+(tokens); ``conflicts'' = descriptions naming incompatible materials.}
+\label{tab:stage1}
+\end{table}
+
+\paragraph{End-to-end (RQ1).} Table~\ref{tab:rq1} reports dev-set ChrF++ for the
+full pipeline in both arms at $k{=}5$. \textbf{Cultural-VQA does not yield a
+consistent end-to-end improvement.} Four of five languages fall within
+$\pm0.6$ ChrF++ of the generic control—within run-to-run noise for $n{=}50$ and
+therefore indistinguishable—and only Nahuatl shows a clear gain ($+1.56$); the
+mean $\Delta$ across languages is $+0.20$. Two sanity checks pass: our generic
+Guaraní (21.26) edges the official baseline (20.82) and generic Nahuatl (13.96)
+exceeds its baseline (11.53), so the pipeline is behaving sensibly rather than
+producing noise.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Language} & \textbf{Base} & \textbf{Gen.} & \textbf{Cult.} & \textbf{$\Delta$} \\
+\midrule
+Guaraní       & 20.82 & 21.26 & 20.70 & $-0.56$ \\
+Bribri        & 7.57  & 4.91  & 4.41  & $-0.50$ \\
+Yucatec Maya  & --    & 19.25 & 19.56 & $+0.30$ \\
+Wixárika      & 17.77 & 8.97  & 9.19  & $+0.22$ \\
+Nahuatl       & 11.53 & 13.96 & 15.52 & $+1.56$ \\
+\midrule
+Mean $\Delta$ &       &       &       & $+0.20$ \\
+\bottomrule
+\end{tabular}
+\caption{End-to-end dev ChrF++ ($k{=}5$). ``Base'' = official baseline;
+``Gen.''/``Cult.'' = generic vs.\ cultural-VQA arms; $\Delta = $ Cult.\ $-$ Gen.
+Four of five deltas are within noise ($\pm0.6$); only Nahuatl moves clearly.}
+\label{tab:rq1}
+\end{table}
+
+\paragraph{Interpretation.} Three caveats bound these numbers. First, a genuine
+retrieval bank exists \emph{only} for Wixárika (the 20-pair pilot); the other four
+languages were translated zero-shot because their parallel banks are not yet
+integrated, so the $k$-ablation is a single point ($k{=}5$) and the retrieval
+contribution is untested for four of five languages. Second, greedy decoding
+degenerated into repetition loops on the lowest-resource languages (Bribri
+$\sim$5 ChrF++ in both arms; Nahuatl's \emph{generic} arm frequently looped),
+which we bounded with an output-length cap—an honest RQ2 signal that a general
+model cannot translate these languages without a real bank. Third, and
+consequently, Nahuatl's $+1.56$ is confounded: cultural-VQA there partly wins by
+avoiding a pathologically degenerate generic baseline rather than by demonstrably
+better cultural grounding. Disentangling genuine grounding from reduced
+degeneration is precisely what the planned human evaluation and category
+breakdown (RQ3) are designed to do.
+
+\section{Conclusion}
+We presented a two-stage, culturally-aware captioning pipeline and its first
+end-to-end numbers. On an intrinsic proxy, concise cultural-VQA matches a generic
+baseline; end-to-end, it is presently indistinguishable from the control on four
+of five languages, with one confounded gain. These results, together with an
+incomplete retrieval bank, define the controlled experiments we prioritize next:
+integrating the full parallel banks, running the LoRA fine-tune, and the
+category-stratified and human evaluations that address RQ2 and RQ3.
+
+\section*{Limitations}
+Our targets are morphologically rich, low-resource languages; results are on
+small dev/pilot splits ($n{\leq}50$), so ChrF++ differences below roughly one
+point are not meaningful and we report them as such. The cultural-VQA arm's
+end-to-end contribution is confounded by (i) a retrieval bank present for only
+one language, (ii) reliance on a proprietary translator (Gemini~2.5~Flash) whose
+behavior may change, and (iii) greedy-decoding degeneration on the lowest-resource
+languages. The Stage~1 intrinsic evaluation exists only for Wixárika (the sole
+split with gold Spanish), and the SmolVLM LoRA fine-tune is not yet complete, so
+the reported arms use an off-the-shelf VLM. Several teammate-supplied citations
+are transcribed from draft reference lists and marked for verification.
+
+\section*{Ethics Statement}
+The CICIL data are released under CC~BY-NC~4.0. To respect the NonCommercial
+clause we translate via Vertex~AI, which does not use inputs to train models,
+rather than a consumer API tier that may; our use is non-commercial academic
+research and we attribute the dataset. This work aims to support, not supplant,
+indigenous-language communities; captions generated by our system are not
+authoritative and should be validated by native and heritage speakers before any
+community-facing use. We report negative and confounded results transparently to
+avoid overstating the utility of automated cultural captioning.
+
+\bibliography{custom}
+\bibliographystyle{acl_natbib}
+
+\end{document}

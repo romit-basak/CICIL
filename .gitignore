@@ -1,3 +1,6 @@
+# Secrets
+.env
+
 # Python / uv
 .venv/
 __pycache__/
@@ -13,7 +16,10 @@ images/
 outputs/*.log
 outputs/adapters/
 
+# Stage 2 FAISS indices: regenerable build artifact (uv run python -m src.stage2.build_index).
+# Prediction .txt files under predictions/ are versioned (the Stage 2 hand-off to analysis).
+indices/
+predictions/_dryrun/
+
 # OS
 .DS_Store
-
-Mehek/

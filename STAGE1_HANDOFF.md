@@ -3,6 +3,46 @@
 Stage 1 produces the Spanish intermediate descriptions; Stage 2 translates them to
 the target language and scores them. This note is the interface between the two.
 
+## ✅ Stage 2 RESULTS — ran end-to-end 2026-07-03 (covering for Mehek)
+
+Both arms were translated (Gemini 2.5 Flash **via Vertex AI**, ADC auth — the
+Education grant covers Vertex but *not* the AI Studio paid tier) and scored with
+`src/stage1/evaluate.py`. Stage 2 code now lives in **`src/stage2/`** (relocated
+from `Mehek/`): `build_index → translate → run_ablations`; reproduce with
+`uv run python -m src.stage2.run_ablations`.
+
+**End-to-end dev ChrF++ (k=5):**
+
+| Language | Official | Generic | Cultural-VQA | Δ |
+|---|---|---|---|---|
+| Guaraní | 20.82 | 21.26 | 20.70 | −0.56 |
+| Bribri | 7.57 | 4.91 | 4.41 | −0.50 |
+| Yucatec Maya | — | 19.25 | 19.56 | +0.30 |
+| Wixárika | 17.77 | 8.97 | 9.19 | +0.22 |
+| Nahuatl | 11.53 | 13.96 | 15.52 | **+1.56** |
+| **Mean Δ** | | | | **+0.20** |
+
+**Honest read (RQ1):** cultural-VQA shows **no consistent end-to-end gain** — four
+of five languages are within ±0.6 ChrF++ (noise for n=50, indistinguishable);
+only Nahuatl moves clearly (+1.56). Sanity checks pass (generic Guaraní 21.26 ≥
+official 20.82; generic Nahuatl 13.96 ≥ 11.53).
+
+**Caveats that bound these numbers:**
+- Retrieval bank is real **only for Wixárika** (20 pilot pairs); the other four
+  ran **zero-shot** (banks not yet integrated) → the k-ablation is a single point
+  (k=5), retrieval contribution untested for 4/5 langs.
+- Greedy decoding degenerated into repetition loops on the lowest-resource langs
+  (Bribri ~5 both arms; Nahuatl *generic* looped); bounded with an output cap.
+- **Nahuatl's +1.56 is confounded** — cultural-VQA partly wins by avoiding a
+  degenerate generic baseline, not by demonstrably better grounding. Human eval +
+  category breakdown (RQ3) are needed to disentangle.
+
+Deliverable paper compiles at `acl2023/cicil_prelim.pdf` (integrates lit review +
+these results). Predictions in `predictions/*.txt`.
+
+---
+
+
 ## What Stage 1 produced
 
 Two conditions, per dev language (5 languages × 50 images = **250 records each**),

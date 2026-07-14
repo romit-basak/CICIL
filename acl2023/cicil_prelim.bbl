@@ -1,0 +1,255 @@
+\begin{thebibliography}{28}
+\expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
+
+\bibitem[{Agrawal et~al.(2023)Agrawal, Zhou, Lewis, Zettlemoyer, and
+  Ghazvininejad}]{agrawal2023icl}
+Sweta Agrawal, Chunting Zhou, Mike Lewis, Luke Zettlemoyer, and Marjan
+  Ghazvininejad. 2023.
+\newblock \href {https://aclanthology.org/2023.findings-acl.564/} {In-context
+  examples selection for machine translation}.
+\newblock In \emph{Findings of the Association for Computational Linguistics:
+  ACL 2023}, pages 8857--8873. Association for Computational Linguistics.
+
+\bibitem[{{AmericasNLP 2026 Organizers}(2026)}]{bui2026cicil}
+{AmericasNLP 2026 Organizers}. 2026.
+\newblock The {AmericasNLP} 2026 shared task on cultural image captioning for
+  indigenous languages ({CICIL}).
+\newblock \url{https://americasnlp.org/2026_st.html}.
+\newblock Shared task and dataset; see also
+  \url{https://github.com/AmericasNLP/americasnlp2026}.
+
+\bibitem[{Dhawan et~al.(2026)Dhawan, Driggers-Ellis, Kasinets, Wang, and
+  Grant}]{dhawan2026gators}
+Aashish Dhawan, Christopher Driggers-Ellis, Dzmitry Kasinets, Daisy~Zhe Wang,
+  and Christan Grant. 2026.
+\newblock \href {http://arxiv.org/abs/2605.20626} {Retrieval-augmented
+  long-context translation for cultural image captioning: Gators submission for
+  {AmericasNLP} 2026 shared task}.
+\newblock In \emph{Proceedings of the Sixth Workshop on NLP for Indigenous
+  Languages of the Americas (AmericasNLP)}.
+
+\bibitem[{Ebrahimi et~al.(2024)Ebrahimi, de~Gibert, V{\'a}zquez, Coto-Solano,
+  Denisov, Pugh, Mager, Oncevay, Chiruzzo, von~der Wense, and
+  Rijhwani}]{ebrahimi2024americasnlp}
+Abteen Ebrahimi, Ona de~Gibert, Ra{\'u}l V{\'a}zquez, Rolando Coto-Solano,
+  Pavel Denisov, Robert Pugh, Manuel Mager, Arturo Oncevay, Luis Chiruzzo,
+  Katharina von~der Wense, and Shruti Rijhwani. 2024.
+\newblock \href {https://aclanthology.org/2024.americasnlp-1.25/} {Findings of
+  the {AmericasNLP} 2024 shared task on machine translation into indigenous
+  languages}.
+\newblock In \emph{Proceedings of the 4th Workshop on Natural Language
+  Processing for Indigenous Languages of the Americas (AmericasNLP)}, pages
+  236--246. Association for Computational Linguistics.
+
+\bibitem[{Ebrahimi et~al.(2023)Ebrahimi, Mager, Wiemerslage, Denisov, Oncevay,
+  von~der Wense et~al.}]{ebrahimi2023americasnlp}
+Abteen Ebrahimi, Manuel Mager, Adam Wiemerslage, Pavel Denisov, Arturo Oncevay,
+  Katharina von~der Wense, et~al. 2023.
+\newblock \href {https://aclanthology.org/2023.americasnlp-1.23/} {Findings of
+  the {AmericasNLP} 2023 shared task on machine translation into indigenous
+  languages}.
+\newblock In \emph{Proceedings of the Third Workshop on Natural Language
+  Processing for Indigenous Languages of the Americas (AmericasNLP)}.
+  Association for Computational Linguistics.
+
+\bibitem[{Hershcovich et~al.(2022)Hershcovich, Frank, Lent, de~Lhoneux, Abdou,
+  Brandl, Bugliarello, Cabello~Piqueras, Chalkidis, Cignarella
+  et~al.}]{hershcovich2022culture}
+Daniel Hershcovich, Stella Frank, Heather Lent, Miryam de~Lhoneux, Mostafa
+  Abdou, Stephanie Brandl, Emanuele Bugliarello, Laura Cabello~Piqueras, Ilias
+  Chalkidis, Alessandra~Teresa Cignarella, et~al. 2022.
+\newblock \href {https://aclanthology.org/2022.acl-long.482/} {Challenges and
+  strategies in cross-cultural {NLP}}.
+\newblock In \emph{Proceedings of the 60th Annual Meeting of the Association
+  for Computational Linguistics (ACL)}. Association for Computational
+  Linguistics.
+
+\bibitem[{Hu et~al.(2022)Hu, Shen, Wallis, Allen-Zhu, Li, Wang, Wang, and
+  Chen}]{hu2022lora}
+Edward~J. Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean
+  Wang, Lu~Wang, and Weizhu Chen. 2022.
+\newblock \href {https://openreview.net/forum?id=nZeVKeeFYf9} {{LoRA}: Low-rank
+  adaptation of large language models}.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}.
+
+\bibitem[{Huang et~al.(2025)Huang, Fan, He, Polisetty, Li, and
+  Fung}]{huang2025cultureclip}
+Yuchen Huang, Zhiyuan Fan, Zhitao He, Sandeep Polisetty, Wenyan Li, and Yi~R.
+  Fung. 2025.
+\newblock \href {https://openreview.net/forum?id=cWVpXWARbt} {{CultureCLIP}:
+  Empowering {CLIP} with cultural awareness through synthetic images and
+  contextualized captions}.
+\newblock In \emph{Conference on Language Modeling (COLM)}.
+
+\bibitem[{Kasai et~al.(2022)Kasai, Sakaguchi, Dunagan, Morrison, Le~Bras, Choi,
+  and Smith}]{kasai2022thumb}
+Jungo Kasai, Keisuke Sakaguchi, Lavinia Dunagan, Jacob Morrison, Ronan Le~Bras,
+  Yejin Choi, and Noah~A. Smith. 2022.
+\newblock \href {https://aclanthology.org/2022.naacl-main.230/} {Transparent
+  human evaluation for image captioning}.
+\newblock In \emph{Proceedings of the 2022 Conference of the North American
+  Chapter of the Association for Computational Linguistics (NAACL)}.
+  Association for Computational Linguistics.
+
+\bibitem[{Kumar et~al.(2026)Kumar, Jyothi, and Bhattacharyya}]{kumar2026chrf}
+Sanjeev Kumar, Preethi Jyothi, and Pushpak Bhattacharyya. 2026.
+\newblock \href {http://arxiv.org/abs/2602.17425} {Evaluating extremely
+  low-resource machine translation: A comparative study of {chrF++} and {BLEU}
+  metrics}.
+\newblock \emph{arXiv preprint arXiv:2602.17425}.
+
+\bibitem[{Li et~al.(2026)Li, Yuan, Li, Aliannejadi, Hershcovich, S{\o}gaard,
+  Vuli{\'c}, Zhang, Liang, Deng, and Belongie}]{li2026ravenea}
+Jiaang Li, Yifei Yuan, Wenyan Li, Mohammad Aliannejadi, Daniel Hershcovich,
+  Anders S{\o}gaard, Ivan Vuli{\'c}, Wenxuan Zhang, Paul~Pu Liang, Yang Deng,
+  and Serge Belongie. 2026.
+\newblock \href {https://openreview.net/forum?id=4zAbkxQ23i} {{RAVENEA}: A
+  benchmark for multimodal retrieval-augmented visual culture understanding}.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}.
+
+\bibitem[{Liu et~al.(2025)Liu, Gurevych, and
+  Korhonen}]{liu2025culturaltaxonomy}
+Chen~Cecilia Liu, Iryna Gurevych, and Anna Korhonen. 2025.
+\newblock \href {https://aclanthology.org/2025.tacl-1.31/} {Culturally aware
+  and adapted {NLP}: A taxonomy and a survey of the state of the art}.
+\newblock \emph{Transactions of the Association for Computational Linguistics},
+  13:652--689.
+
+\bibitem[{Liu et~al.(2021)Liu, Bugliarello, Ponti, Reddy, Collier, and
+  Elliott}]{liu2021marvl}
+Fangyu Liu, Emanuele Bugliarello, Edoardo~Maria Ponti, Siva Reddy, Nigel
+  Collier, and Desmond Elliott. 2021.
+\newblock \href {https://aclanthology.org/2021.emnlp-main.818/} {Visually
+  grounded reasoning across languages and cultures}.
+\newblock In \emph{Proceedings of the 2021 Conference on Empirical Methods in
+  Natural Language Processing (EMNLP)}. Association for Computational
+  Linguistics.
+
+\bibitem[{Mager et~al.(2021)Mager, Oncevay, Ebrahimi, Ortega, Rios, Fan,
+  Gutierrez-Vasques, Chiruzzo, Gim{\'e}nez-Lugo, Ramos
+  et~al.}]{mager2021americasnlp}
+Manuel Mager, Arturo Oncevay, Abteen Ebrahimi, John Ortega, Annette Rios,
+  Angela Fan, Ximena Gutierrez-Vasques, Luis Chiruzzo, Gustavo
+  Gim{\'e}nez-Lugo, Ricardo Ramos, et~al. 2021.
+\newblock \href {https://aclanthology.org/2021.americasnlp-1.23/} {Findings of
+  the {AmericasNLP} 2021 shared task on open machine translation for indigenous
+  languages of the americas}.
+\newblock In \emph{Proceedings of the First Workshop on Natural Language
+  Processing for Indigenous Languages of the Americas (AmericasNLP)}, pages
+  202--217. Association for Computational Linguistics.
+
+\bibitem[{Marafioti et~al.(2025)}]{marafioti2025smolvlm}
+Andr{\'e}s Marafioti et~al. 2025.
+\newblock \href {http://arxiv.org/abs/2504.05299} {{SmolVLM}: Redefining small
+  and efficient multimodal models}.
+\newblock \emph{arXiv preprint arXiv:2504.05299}.
+
+\bibitem[{Merx et~al.(2024)Merx, Mahmudi, Langford, de~Araujo, and
+  Vylomova}]{merx2024mambai}
+Rapha{\"e}l Merx, Aso Mahmudi, Katrina Langford, Leo~Alberto de~Araujo, and
+  Ekaterina Vylomova. 2024.
+\newblock \href {https://aclanthology.org/2024.eurali-1.1/} {Low-resource
+  machine translation through retrieval-augmented {LLM} prompting: A study on
+  the mambai language}.
+\newblock In \emph{Proceedings of the 2nd Workshop on the Interplay of
+  Endangered Languages and AI (EURALI) at LREC-COLING 2024}. ELRA and ICCL.
+
+\bibitem[{Muhammad et~al.(2025)Muhammad, Ousidhoum, Abdulmumin
+  et~al.}]{muhammad2025semeval}
+Shamsuddeen~Hassan Muhammad, Nedjma Ousidhoum, Idris Abdulmumin, et~al. 2025.
+\newblock \href {https://aclanthology.org/2025.semeval-1.327/} {{SemEval-2025}
+  task 11: Bridging the gap in text-based emotion detection}.
+\newblock In \emph{Proceedings of the 19th International Workshop on Semantic
+  Evaluation (SemEval-2025)}. Association for Computational Linguistics.
+
+\bibitem[{Nayak et~al.(2024)Nayak, Jain, Awal, Reddy, van Steenkiste,
+  Hendricks, Stanczak, and Agrawal}]{nayak2024culturalvqa}
+Shravan Nayak, Kanishk Jain, Rabiul Awal, Siva Reddy, Sjoerd van Steenkiste,
+  Lisa~Anne Hendricks, Karolina Stanczak, and Aishwarya Agrawal. 2024.
+\newblock \href {https://aclanthology.org/2024.emnlp-main.329/} {Benchmarking
+  vision language models for cultural understanding}.
+\newblock In \emph{Proceedings of the 2024 Conference on Empirical Methods in
+  Natural Language Processing (EMNLP)}, pages 5769--5790. Association for
+  Computational Linguistics.
+
+\bibitem[{Nie et~al.(2022)Nie, Liang, Schmid, and Sch{\"u}tze}]{nie2022parc}
+Ercong Nie, Sheng Liang, Helmut Schmid, and Hinrich Sch{\"u}tze. 2022.
+\newblock \href {http://arxiv.org/abs/2212.09651} {Cross-lingual retrieval
+  augmented prompt for low-resource languages}.
+\newblock \emph{arXiv preprint arXiv:2212.09651}.
+
+\bibitem[{Popovi{\'c}(2017)}]{popovic2017chrfpp}
+Maja Popovi{\'c}. 2017.
+\newblock \href {https://aclanthology.org/W17-4770/} {{chrF++}: words helping
+  character n-grams}.
+\newblock In \emph{Proceedings of the Second Conference on Machine Translation
+  (WMT)}, pages 612--618. Association for Computational Linguistics.
+
+\bibitem[{{Qwen Team}(2025)}]{qwen2025qwen25vl}
+{Qwen Team}. 2025.
+\newblock \href {http://arxiv.org/abs/2502.13923} {{Qwen2.5-VL} technical
+  report}.
+\newblock \emph{arXiv preprint arXiv:2502.13923}.
+
+\bibitem[{Radford et~al.(2021)Radford, Kim, Hallacy, Ramesh, Goh, Agarwal,
+  Sastry, Askell, Mishkin, Clark, Krueger, and Sutskever}]{radford2021clip}
+Alec Radford, Jong~Wook Kim, Chris Hallacy, Aditya Ramesh, Gabriel Goh,
+  Sandhini Agarwal, Girish Sastry, Amanda Askell, Pamela Mishkin, Jack Clark,
+  Gretchen Krueger, and Ilya Sutskever. 2021.
+\newblock \href {https://proceedings.mlr.press/v139/radford21a.html} {Learning
+  transferable visual models from natural language supervision}.
+\newblock In \emph{Proceedings of the 38th International Conference on Machine
+  Learning (ICML)}, volume 139 of \emph{PMLR}, pages 8748--8763.
+
+\bibitem[{Reimers and Gurevych(2020)}]{reimers2020multilingual}
+Nils Reimers and Iryna Gurevych. 2020.
+\newblock \href {https://aclanthology.org/2020.emnlp-main.365/} {Making
+  monolingual sentence embeddings multilingual using knowledge distillation}.
+\newblock In \emph{Proceedings of the 2020 Conference on Empirical Methods in
+  Natural Language Processing (EMNLP)}, pages 4512--4525. Association for
+  Computational Linguistics.
+
+\bibitem[{Romero et~al.(2024)}]{romero2024cvqa}
+David Romero et~al. 2024.
+\newblock \href
+  {https://proceedings.neurips.cc/paper_files/paper/2024/hash/1568882ba1a50316e87852542523739c-Abstract-Datasets_and_Benchmarks_Track.html}
+  {{CVQA}: Culturally-diverse multilingual visual question answering
+  benchmark}.
+\newblock In \emph{Advances in Neural Information Processing Systems 37
+  (NeurIPS): Datasets and Benchmarks Track}.
+
+\bibitem[{Schneider et~al.(2025)Schneider, Holtermann, Biemann, and
+  Lauscher}]{schneider2025gimmick}
+Florian Schneider, Carolin Holtermann, Chris Biemann, and Anne Lauscher. 2025.
+\newblock \href {https://aclanthology.org/2025.findings-acl.500/} {{GIMMICK}:
+  Globally inclusive multimodal multitask cultural knowledge benchmarking}.
+\newblock In \emph{Findings of the Association for Computational Linguistics:
+  ACL 2025}. Association for Computational Linguistics.
+
+\bibitem[{Yadav et~al.(2025)Yadav, Tilton, Antoniak, Arnold, Li
+  et~al.}]{yadav2025cultural}
+Srishti Yadav, Lauren Tilton, Maria Antoniak, Taylor Arnold, Jiaang Li, et~al.
+  2025.
+\newblock \href {http://arxiv.org/abs/2505.22793} {Cultural evaluations of
+  vision-language models have a lot to learn from cultural theory}.
+\newblock \emph{arXiv preprint arXiv:2505.22793}.
+
+\bibitem[{Yun and Kim(2024)}]{yun2024cic}
+Youngsik Yun and Jihie Kim. 2024.
+\newblock \href {https://www.ijcai.org/proceedings/2024/180} {{CIC}: A
+  framework for culturally-aware image captioning}.
+\newblock In \emph{Proceedings of the Thirty-Third International Joint
+  Conference on Artificial Intelligence (IJCAI)}.
+
+\bibitem[{Zhai et~al.(2023)Zhai, Mustafa, Kolesnikov, and
+  Beyer}]{zhai2023siglip}
+Xiaohua Zhai, Basil Mustafa, Alexander Kolesnikov, and Lucas Beyer. 2023.
+\newblock \href
+  {https://openaccess.thecvf.com/content/ICCV2023/html/Zhai_Sigmoid_Loss_for_Language_Image_Pre-Training_ICCV_2023_paper.html}
+  {Sigmoid loss for language image pre-training}.
+\newblock In \emph{Proceedings of the IEEE/CVF International Conference on
+  Computer Vision (ICCV)}.
+
+\end{thebibliography}
