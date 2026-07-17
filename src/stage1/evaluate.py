@@ -40,9 +40,15 @@ def _read_lines(path: Path, expected: int) -> list[str]:
 
 
 def score_translations(lang: str, translations_txt: str | Path,
-                        split: str = "dev") -> tuple[float, list[float]]:
-    """Mean ChrF++ of a predictions file vs. dev references (line-aligned)."""
-    refs = [ex.target_caption or "" for ex in load_split(lang, split)]
+                        split: str = "dev",
+                        ref_field: str = "target_caption") -> tuple[float, list[float]]:
+    """Mean ChrF++ of a predictions file vs. references (line-aligned).
+
+    ``ref_field`` selects the Example attribute used as the reference:
+    ``target_caption`` (default, indigenous-language gold) or ``spanish_caption``
+    for the Stage 1 Spanish pilot proxy (Wixarika pilot only).
+    """
+    refs = [getattr(ex, ref_field) or "" for ex in load_split(lang, split)]
     hyps = _read_lines(Path(translations_txt), len(refs))
     if len(hyps) != len(refs):
         raise ValueError(
@@ -94,6 +100,9 @@ def main() -> None:
     ap.add_argument("--lang", choices=config.LANGUAGES)
     ap.add_argument("--split", default="dev", choices=["pilot", "dev", "test"])
     ap.add_argument("--translations", help="File of target-language predictions (one per line).")
+    ap.add_argument("--ref-field", default="target_caption",
+                    choices=["target_caption", "spanish_caption"],
+                    help="Reference field to score against (spanish_caption = pilot proxy).")
     args = ap.parse_args()
 
     if args.official:
@@ -102,7 +111,7 @@ def main() -> None:
     if not (args.lang and args.translations):
         ap.error("provide --official, or both --lang and --translations")
 
-    mean, scores = score_translations(args.lang, args.translations, args.split)
+    mean, scores = score_translations(args.lang, args.translations, args.split, args.ref_field)
     print(f"{args.lang}/{args.split}: {len(scores)} items, mean chrF++ = {mean:.2f}")
 
 

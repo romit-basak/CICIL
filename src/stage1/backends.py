@@ -97,12 +97,63 @@ class HFQwenBackend:
         )[0].strip()
 
 
+class SmolVLMBackend:
+    """SmolVLM via HuggingFace transformers, optionally with a LoRA adapter.
+
+    This serves the fine-tuned Stage 1 model: it loads the base SmolVLM and, if an
+    ``adapter`` directory is given, layers the trained LoRA weights on top via peft.
+    With no adapter it's the off-the-shelf SmolVLM (the fine-tuning control).
+    """
+
+    def __init__(self, model_id: str = config.SMOLVLM_ID, adapter: str | Path | None = None):
+        from transformers import AutoModelForImageTextToText, AutoProcessor
+
+        self.device = config.device()
+        # do_image_splitting=False matches how the adapter was trained (and caps
+        # image-token count / memory).
+        self.processor = AutoProcessor.from_pretrained(model_id, do_image_splitting=False)
+        model = AutoModelForImageTextToText.from_pretrained(
+            model_id, dtype=config.dtype(self.device)
+        )
+        if adapter is not None:
+            from peft import PeftModel
+
+            model = PeftModel.from_pretrained(model, str(adapter))
+        self.model = model.to(self.device)
+        self.model.eval()
+
+    def caption(self, image_path: str | Path, prompt: str) -> str:
+        import torch
+        from PIL import Image
+
+        messages = [{"role": "user", "content": [
+            {"type": "image"}, {"type": "text", "text": prompt}]}]
+        text = self.processor.apply_chat_template(messages, add_generation_prompt=True)
+        inputs = self.processor(
+            text=[text], images=[[Image.open(image_path).convert("RGB")]],
+            return_tensors="pt",
+        ).to(self.device)
+        amp_dtype = config.dtype(self.device)
+        use_autocast = self.device in ("cuda", "mps")
+        with torch.no_grad(), torch.autocast(
+            device_type=self.device, dtype=amp_dtype, enabled=use_autocast
+        ):
+            generated = self.model.generate(**inputs, max_new_tokens=64, do_sample=False)
+        trimmed = generated[0][inputs["input_ids"].shape[1]:]
+        return self.processor.decode(trimmed, skip_special_tokens=True).strip()
+
+
 def get_backend(name: str, model: str | None = None,
-                temperature: float = 0.2, seed: int | None = None):
+                temperature: float = 0.2, seed: int | None = None,
+                adapter: str | None = None):
     if name == "ollama":
         return OllamaBackend(model or config.OLLAMA_VLM, temperature=temperature, seed=seed)
     if name == "hf":
         # HFQwenBackend already decodes greedily (do_sample=False), so it is
         # deterministic and ignores temperature/seed.
         return HFQwenBackend(model or config.HF_QWEN_ID)
-    raise ValueError(f"Unknown backend: {name!r} (expected 'ollama' or 'hf')")
+    if name == "smolvlm":
+        # Deterministic greedy decode; ignores temperature/seed. ``adapter`` points
+        # at the trained LoRA dir (config.ADAPTER_DIR) for the fine-tuned arm.
+        return SmolVLMBackend(model or config.SMOLVLM_ID, adapter=adapter)
+    raise ValueError(f"Unknown backend: {name!r} (expected 'ollama', 'hf', or 'smolvlm')")

@@ -43,8 +43,10 @@ def main() -> None:
     ap.add_argument("--lang", required=True, choices=config.LANGUAGES)
     ap.add_argument("--split", default="dev", choices=["pilot", "dev", "test"])
     ap.add_argument("--mode", default="generic", choices=["generic", "cultural-vqa"])
-    ap.add_argument("--backend", default="ollama", choices=["ollama", "hf"])
+    ap.add_argument("--backend", default="ollama", choices=["ollama", "hf", "smolvlm"])
     ap.add_argument("--model", default=None, help="Override model id/tag for the backend.")
+    ap.add_argument("--adapter", default=None,
+                    help="LoRA adapter dir (smolvlm backend only) for the fine-tuned Stage 1 model.")
     ap.add_argument("--limit", type=int, default=None, help="Process only the first N images.")
     ap.add_argument("--temperature", type=float, default=0.2,
                     help="Sampling temperature (ollama only). Use 0 for deterministic decoding.")
@@ -57,7 +59,8 @@ def main() -> None:
         examples = examples[: args.limit]
 
     backend = get_backend(args.backend, args.model,
-                          temperature=args.temperature, seed=args.seed)
+                          temperature=args.temperature, seed=args.seed,
+                          adapter=args.adapter)
     runner = _run_generic if args.mode == "generic" else _run_cultural_vqa
 
     config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
