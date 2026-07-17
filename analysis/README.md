@@ -72,9 +72,13 @@ Sampling is stratified by cultural category (reuses the RQ3 labels) and blinded
   runnable and task 2 runs its labeling/distribution half; the scoring half switches
   on automatically once `data/` is present.
 - **Cultural annotation version.** The dev `*_cultural-vqa_ollama.jsonl` in `outputs/`
-  are the **v1 (verbose)** annotations; the paper's reported cultural *scores* use the
-  **v2 (concise)** regeneration (see `STAGE1_HANDOFF.md`). RQ3 category *presence* is
-  robust to this, but re-run the harness on the v2 files before quoting per-category
-  ChrF++ so labels and scores come from the same generation.
+  are the **v2 (concise)** annotations (verified ~25 words/answer) — the same generation
+  the paper's reported cultural *scores* use. Labels and scores therefore already come
+  from one generation; no regeneration is needed. (The `cultural_annotations` are in any
+  case prompt-invariant between v1/v2 — only the synthesized Spanish description changed —
+  so category *presence* would be identical regardless.)
+- **Category buckets overlap.** Each caption counts toward *every* category present in its
+  image, so per-category mean ChrF++ columns are not independent partitions; a low bucket
+  can't be cleanly attributed to one category. Report the heatmap as indicative, not causal.
 - **Target-language human eval needs speakers.** The team can annotate the Spanish
   sheet now; the target sheet is for recruited native/heritage annotators.

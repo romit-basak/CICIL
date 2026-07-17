@@ -1,21 +1,21 @@
 language,category,n_present,n_total,mean_chrfpp
-Guaraní,Ceremony,33,50,
-Guaraní,Material culture,22,50,
-Guaraní,Landscape,33,50,
-Guaraní,Kinship,16,50,
-Yucatec Maya,Ceremony,12,50,
-Yucatec Maya,Material culture,12,50,
-Yucatec Maya,Landscape,44,50,
-Yucatec Maya,Kinship,17,50,
-Wixárika,Ceremony,18,50,
-Wixárika,Material culture,13,50,
-Wixárika,Landscape,45,50,
-Wixárika,Kinship,25,50,
-Nahuatl,Ceremony,17,50,
-Nahuatl,Material culture,14,50,
-Nahuatl,Landscape,37,50,
-Nahuatl,Kinship,16,50,
-Bribri,Ceremony,28,50,
-Bribri,Material culture,28,50,
-Bribri,Landscape,42,50,
-Bribri,Kinship,24,50,
+Guaraní,Ceremony,33,50,21.31
+Guaraní,Material culture,22,50,21.9
+Guaraní,Landscape,33,50,20.52
+Guaraní,Kinship,16,50,20.87
+Yucatec Maya,Ceremony,12,50,20.64
+Yucatec Maya,Material culture,12,50,17.6
+Yucatec Maya,Landscape,44,50,19.72
+Yucatec Maya,Kinship,17,50,19.49
+Wixárika,Ceremony,18,50,9.76
+Wixárika,Material culture,13,50,8.4
+Wixárika,Landscape,45,50,9.29
+Wixárika,Kinship,25,50,9.48
+Nahuatl,Ceremony,17,50,13.94
+Nahuatl,Material culture,14,50,18.19
+Nahuatl,Landscape,37,50,16.02
+Nahuatl,Kinship,16,50,16.9
+Bribri,Ceremony,28,50,4.13
+Bribri,Material culture,28,50,4.38
+Bribri,Landscape,42,50,4.42
+Bribri,Kinship,24,50,4.26
