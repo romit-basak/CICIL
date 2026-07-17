@@ -1,0 +1,51 @@
+id,ceremony,material_culture,landscape,kinship,chrfpp,ceremony_absence_cues,material_culture_absence_cues,landscape_absence_cues,kinship_absence_cues
+hch_021,1,0,1,1,,,vestimenta,,
+hch_022,1,0,1,0,,,elementos,,personas
+hch_023,1,1,1,1,,,,,
+hch_024,0,0,1,1,,observa,observan,,
+hch_025,0,0,1,1,,elementos,elementos,,
+hch_026,0,0,1,1,,elementos,puede determinar,,
+hch_027,0,0,1,0,,observa,elementos,,puede determinar
+hch_028,0,0,1,0,,elementos; observa,observan,,informacion
+hch_029,0,0,1,1,,elementos,vestimenta,,
+hch_030,1,0,1,0,,,es,,personas
+hch_031,1,0,1,0,,,elementos,,personas
+hch_032,0,0,1,0,,elementos,elementos,,elementos
+hch_033,0,0,0,0,,observan,elementos; observan,observa,personas
+hch_034,0,0,0,0,,elementos,elementos; observan,informacion,personas
+hch_035,0,0,0,0,,elementos,ven,elementos,personas
+hch_036,0,1,1,0,,observa,,,personas
+hch_037,1,0,1,1,,,instrumentos,,
+hch_038,0,1,1,1,,ve,,,
+hch_039,1,1,1,0,,,,,puede determinar
+hch_040,0,1,1,1,,elementos,,,
+hch_041,0,0,0,0,,puede determinar,elementos,es,personas
+hch_042,0,0,1,1,,observa; ven,elementos,,
+hch_043,1,0,1,0,,,ven,,personas
+hch_044,1,0,1,1,,,elementos,,
+hch_045,1,1,1,1,,,,,
+hch_046,0,1,1,1,,observan,,,
+hch_047,0,0,1,0,,observa,elementos,,personas
+hch_048,0,0,1,0,,elementos; observa,elementos,,personas
+hch_049,0,0,1,1,,observan,elementos,,
+hch_050,0,1,1,1,,elementos,,,
+hch_051,1,1,1,1,,,,,
+hch_052,1,0,1,0,,,elementos,,personas
+hch_053,1,0,1,0,,,elementos,,personas; puede determinar
+hch_054,0,0,1,0,,observa,puede determinar,,personas
+hch_055,0,0,1,0,,observa,elementos,,personas
+hch_056,0,0,1,1,,observa,elementos,,
+hch_057,1,1,1,0,,,,,personas
+hch_058,1,0,1,1,,,elementos,,
+hch_059,0,1,1,1,,observa,,,
+hch_060,1,0,1,1,,,elementos,,
+hch_061,0,0,1,0,,puede determinar,elementos,,personas
+hch_062,0,0,1,1,,elementos,elementos,,
+hch_063,1,0,1,1,,,elementos,,
+hch_064,0,0,0,0,,elementos,elementos,observa,personas
+hch_065,0,1,1,1,,observa,,,
+hch_066,0,0,1,0,,observa,elementos,,personas
+hch_067,0,0,1,1,,elementos; observa,elementos; ve,,
+hch_068,0,0,1,1,,observa,elementos,,
+hch_069,0,0,1,0,,observa,elementos,,personas
+hch_070,1,1,1,0,,,,,puede determinar

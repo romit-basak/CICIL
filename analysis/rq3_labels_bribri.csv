@@ -1,0 +1,51 @@
+id,ceremony,material_culture,landscape,kinship,chrfpp,ceremony_absence_cues,material_culture_absence_cues,landscape_absence_cues,kinship_absence_cues
+bzd_000,1,1,1,1,,,,,
+bzd_001,1,1,1,1,,,,,
+bzd_002,1,1,0,0,,,,informacion; puede determinar,personas
+bzd_003,0,0,1,1,,elementos,ven,,
+bzd_004,0,1,1,1,,elementos,,,
+bzd_005,1,1,0,0,,,,informacion; puede determinar,personas
+bzd_006,0,1,1,1,,elementos,,,
+bzd_007,0,0,1,0,,puede determinar,observan,,puede determinar
+bzd_008,0,1,1,1,,puede determinar,,,
+bzd_009,1,1,1,0,,,,,personas
+bzd_010,0,1,1,0,,elementos; puede determinar,,,puede determinar
+bzd_011,1,1,1,1,,,,,
+bzd_012,0,0,1,0,,observa; observan,observan,,personas
+bzd_013,1,1,1,1,,,,,
+bzd_014,1,0,1,0,,,elementos,,personas
+bzd_015,0,0,0,0,,puede determinar,elementos; observan,puede determinar,personas
+bzd_016,0,0,1,0,,elementos; observa,elementos,,personas
+bzd_017,0,1,1,0,,elementos,,,personas
+bzd_018,1,1,1,0,,,,,puede determinar
+bzd_019,1,1,1,0,,,,,puede determinar
+bzd_020,1,1,1,0,,,,,informacion
+bzd_021,1,1,0,0,,,,observa,puede determinar
+bzd_022,0,1,0,0,,observa,,puede determinar,personas
+bzd_023,1,0,1,1,,,elementos,,
+bzd_024,1,0,1,1,,,elementos,,
+bzd_025,0,1,1,0,,elementos,,,puede determinar
+bzd_026,0,0,1,1,,elementos,elementos,,
+bzd_027,0,0,1,0,,elementos; observa,elementos,,personas
+bzd_028,0,0,1,1,,puede determinar,ve,,
+bzd_029,1,0,1,1,,,ven,,
+bzd_030,1,1,0,0,,,,observan,personas
+bzd_031,1,0,1,1,,,elementos,,
+bzd_032,1,1,1,1,,,,,
+bzd_033,1,0,1,1,,,instrumentos,,
+bzd_034,0,1,0,1,,puede determinar,,puede determinar,
+bzd_035,0,1,1,0,,elementos; observan,,,personas
+bzd_036,1,1,1,0,,,,,personas
+bzd_037,0,0,1,1,,elementos,ven,,
+bzd_038,1,0,1,0,,,elementos,,puede determinar
+bzd_039,0,0,1,1,,observa,elementos,,
+bzd_040,1,1,1,1,,,,,
+bzd_041,1,1,1,1,,,,,
+bzd_042,1,1,1,1,,,,,
+bzd_043,1,0,1,0,,,observan,,personas
+bzd_044,1,1,0,0,,,,informacion,personas
+bzd_045,0,1,1,0,,puede determinar,,,puede determinar
+bzd_046,1,0,1,1,,,observan,,
+bzd_047,0,0,1,0,,puede determinar,elementos,,puede determinar
+bzd_048,0,0,1,0,,observa,elementos; observan,,personas
+bzd_049,1,0,1,1,,,elementos,,

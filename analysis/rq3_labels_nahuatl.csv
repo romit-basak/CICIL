@@ -1,0 +1,51 @@
+id,ceremony,material_culture,landscape,kinship,chrfpp,ceremony_absence_cues,material_culture_absence_cues,landscape_absence_cues,kinship_absence_cues
+nlv_001,1,0,1,1,,,observan,,
+nlv_002,0,0,1,1,,elementos,elementos,,
+nlv_003,0,0,1,1,,elementos,elementos,,
+nlv_004,0,1,1,0,,puede determinar,,,puede determinar
+nlv_005,1,0,1,0,,,observan; puede determinar,,puede determinar
+nlv_006,0,1,1,0,,puede determinar,,,puede determinar
+nlv_007,1,1,0,0,,,,observa,personas
+nlv_008,0,1,1,1,,elementos,,,
+nlv_009,1,0,0,0,,,elementos; observan,elementos,informacion
+nlv_010,1,1,0,1,,,,elementos; puede determinar,
+nlv_011,0,1,1,0,,elementos,,,informacion
+nlv_012,1,0,1,1,,,elementos,,
+nlv_013,0,1,1,0,,elementos,,,personas
+nlv_014,0,0,1,0,,observan,elementos; observan,,personas
+nlv_015,0,0,1,0,,elementos,elementos,,elementos
+nlv_016,0,0,1,0,,elementos; observa,elementos,,personas
+nlv_017,0,0,1,0,,elementos,instrumentos,,puede determinar
+nlv_018,0,1,1,1,,elementos,,,
+nlv_019,0,0,1,0,,elementos,elementos,,personas
+nlv_020,0,0,0,0,,elementos,elementos,ven,personas
+nlv_021,0,0,0,0,,observan,elementos,ven,puede determinar
+nlv_023,0,0,1,0,,observa,elementos,,personas
+nlv_024,1,1,0,0,,,,observa,puede determinar
+nlv_025,0,1,1,0,,observa,,,personas
+nlv_026,1,0,1,0,,,vestimentas,,personas
+nlv_027,0,0,1,0,,puede determinar,elementos,,personas
+nlv_028,0,0,1,0,,observan; puede determinar,elementos; observan,,personas
+nlv_029,1,0,0,0,,,elementos,informacion,personas
+nlv_030,0,0,0,0,,elementos,elementos,observa,personas
+nlv_031,1,0,1,1,,,elementos,,
+nlv_032,0,1,0,0,,elementos,,elementos,informacion
+nlv_033,0,0,1,1,,puede determinar,elementos,,
+nlv_034,0,0,1,1,,elementos,elementos,,
+nlv_035,0,0,0,1,,observan; puede determinar,ve,aprecian,
+nlv_036,1,0,1,0,,,elementos,,personas
+nlv_037,1,0,1,1,,,elementos,,
+nlv_038,1,0,0,0,,,vestimentas,informacion; puede determinar,personas
+nlv_039,0,0,1,0,,observa,elementos; observan,,personas
+nlv_040,0,0,1,0,,elementos; observan,elementos,,informacion
+nlv_041,0,0,1,0,,elementos; observa,vestimentas,,personas
+nlv_042,0,1,1,1,,elementos; observa,,,
+nlv_043,0,0,1,0,,observan,observan,,elementos
+nlv_044,0,0,1,1,,observa,instrumentos,,
+nlv_045,1,0,0,0,,,elementos,informacion,personas
+nlv_046,0,1,0,0,,elementos; puede determinar,,puede determinar,personas
+nlv_047,1,0,1,0,,,elementos; observan,,elementos
+nlv_048,0,1,1,0,,puede determinar,,,personas
+nlv_049,0,0,1,1,,observa,elementos,,
+nlv_050,1,0,1,0,,,elementos,,personas
+nlv_051,1,0,1,1,,,elementos,,

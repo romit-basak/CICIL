@@ -1,0 +1,51 @@
+id,ceremony,material_culture,landscape,kinship,chrfpp,ceremony_absence_cues,material_culture_absence_cues,landscape_absence_cues,kinship_absence_cues
+yua_001,1,0,1,0,,,elementos,,personas
+yua_002,0,0,1,0,,observan,elementos,,personas
+yua_003,1,0,0,0,,,elementos; ven,elementos,puede determinar
+yua_004,0,0,0,0,,elementos,elementos,informacion,personas
+yua_005,0,0,0,0,,elementos,elementos,puede determinar,personas
+yua_006,0,0,0,0,,elementos,instrumentos; observan,informacion,personas
+yua_007,0,0,1,1,,elementos,elementos,,
+yua_008,0,0,1,0,,elementos,elementos; observan,,ven
+yua_009,1,0,1,0,,,puede determinar,,informacion
+yua_010,0,0,1,0,,puede determinar,elementos,,informacion
+yua_011,0,1,1,0,,elementos,,,personas
+yua_012,1,1,1,0,,,,,personas
+yua_013,0,0,1,0,,elementos,elementos,,informacion
+yua_014,0,1,1,1,,elementos; puede determinar,,,
+yua_015,0,0,1,0,,observa,elementos,,informacion; personas
+yua_016,0,0,1,0,,observa,elementos,,personas
+yua_017,1,0,1,1,,,elementos,,
+yua_018,0,0,1,0,,elementos,elementos,,personas
+yua_019,0,1,1,0,,elementos,,,personas
+yua_020,0,0,0,0,,observan,elementos; observan,elementos; observan,informacion; personas
+yua_021,1,0,1,0,,,elementos,,personas; puede determinar
+yua_022,0,0,1,1,,observa,ven,,
+yua_024,0,1,1,1,,observa,,,
+yua_025,0,1,1,1,,puede determinar,,,
+yua_026,0,0,1,1,,observa,elementos; puede determinar,,
+yua_027,0,0,1,0,,observan,elementos,,personas
+yua_028,1,0,1,1,,,instrumentos,,
+yua_029,0,0,1,0,,es; observan,elementos,,personas
+yua_030,0,0,1,1,,elementos; observa,instrumentos,,
+yua_031,0,0,1,1,,elementos,elementos; observan,,
+yua_032,0,0,1,0,,elementos; puede determinar,elementos,,personas
+yua_033,1,1,1,0,,,,,personas
+yua_034,1,1,1,0,,,,,personas
+yua_035,1,1,1,1,,,,,
+yua_036,0,1,1,0,,puede determinar,,,personas
+yua_037,0,0,1,1,,observan,ve,,
+yua_038,0,0,1,1,,elementos; puede determinar,elementos,,
+yua_039,0,0,1,1,,elementos; observan,elementos; observan,,
+yua_040,0,1,1,0,,observa,,,ven
+yua_041,0,0,1,0,,elementos; puede determinar,elementos,,personas
+yua_042,0,0,1,1,,elementos,elementos,,
+yua_043,1,0,0,1,,,instrumentos,observa,
+yua_044,0,0,1,0,,elementos,elementos,,personas
+yua_045,0,0,1,0,,elementos; ven,observan,,personas
+yua_046,0,0,1,0,,puede determinar,elementos,,personas
+yua_047,0,0,1,0,,elementos; observa,elementos,,personas
+yua_048,1,0,1,0,,,elementos; observan,,informacion
+yua_049,0,0,1,0,,elementos,elementos,,personas
+yua_050,0,1,1,1,,elementos,,,
+yua_051,0,0,1,0,,elementos; observa,elementos; observan,,personas

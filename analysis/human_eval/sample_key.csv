@@ -1,0 +1,16 @@
+sample_id,language,image_id,image_filename,slot_A_arm,slot_B_arm,categories_present
+S001,Guaraní,grn_019,grn_019.jpg,cultural,generic,Ceremony; Material culture
+S002,Guaraní,grn_023,grn_023.jpg,generic,cultural,Ceremony; Landscape; Material culture
+S003,Guaraní,grn_025,grn_025.jpg,cultural,generic,Ceremony; Kinship; Landscape; Material culture
+S004,Yucatec Maya,yua_001,yua_001.jpg,cultural,generic,Ceremony; Landscape
+S005,Yucatec Maya,yua_029,yua_029.jpg,cultural,generic,Landscape
+S006,Yucatec Maya,yua_035,yua_035.jpg,cultural,generic,Ceremony; Kinship; Landscape; Material culture
+S007,Wixárika,hch_021,hch_021.jpg,cultural,generic,Ceremony; Kinship; Landscape
+S008,Wixárika,hch_051,hch_051.jpg,generic,cultural,Ceremony; Kinship; Landscape; Material culture
+S009,Wixárika,hch_055,hch_055.jpg,cultural,generic,Landscape
+S010,Nahuatl,nlv_007,nlv_007.jpg,cultural,generic,Ceremony; Material culture
+S011,Nahuatl,nlv_010,nlv_010.jpg,cultural,generic,Ceremony; Kinship; Material culture
+S012,Nahuatl,nlv_018,nlv_018.jpg,cultural,generic,Kinship; Landscape; Material culture
+S013,Bribri,bzd_035,bzd_035.jpg,generic,cultural,Landscape; Material culture
+S014,Bribri,bzd_040,bzd_040.jpg,generic,cultural,Ceremony; Kinship; Landscape; Material culture
+S015,Bribri,bzd_042,bzd_042.JPG,generic,cultural,Ceremony; Kinship; Landscape; Material culture
