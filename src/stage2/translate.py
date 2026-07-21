@@ -95,6 +95,13 @@ def parse_args():
         help="Number of retrieved few-shot examples (ablation: 3, 5, 8). Default: 5",
     )
     p.add_argument(
+        "--backend", default="ollama",
+        choices=["ollama", "smolvlm", "hf", "vllm", "smolvlm-devonly", "smolvlm-noctx"],
+        help="Which Stage 1 backend produced the input JSONL. Non-ollama runs "
+             "read <lang>_dev_<mode>_<backend>.jsonl and write predictions "
+             "tagged with the backend (ollama keeps the original filenames).",
+    )
+    p.add_argument(
         "--dry-run", action="store_true",
         help="Validate load/retrieve/prompt without calling Gemini (no key, no quota). "
              "Writes sample prompts to predictions/_dryrun/ and skips *_predictions.txt.",
@@ -210,9 +217,10 @@ def _load_retriever(lang: str, k: int):
         return None
 
 
-def translate_language(lang: str, mode: str, k: int, dry_run: bool):
+def translate_language(lang: str, mode: str, k: int, dry_run: bool,
+                       backend: str = "ollama"):
     lang_name = LANGUAGE_NAMES.get(lang, lang)
-    input_file = INPUT_DIR / f"{lang}_dev_{mode}_ollama.jsonl"
+    input_file = INPUT_DIR / f"{lang}_dev_{mode}_{backend}.jsonl"
     if not input_file.exists():
         print(f"  WARNING: {input_file} not found -- skipping {lang}.")
         return
@@ -276,7 +284,10 @@ def translate_language(lang: str, mode: str, k: int, dry_run: bool):
         )
         return
 
-    out_file = PRED_DIR / f"{lang}_{mode}_k{k}_predictions.txt"
+    # ollama keeps the original name (the prelim hand-off contract with the
+    # analysis package); other backends get tagged so nothing is clobbered.
+    tag = "" if backend == "ollama" else f"_{backend}"
+    out_file = PRED_DIR / f"{lang}_{mode}{tag}_k{k}_predictions.txt"
     PRED_DIR.mkdir(parents=True, exist_ok=True)
     with out_file.open("w", encoding="utf-8") as f:
         for pred in predictions:
@@ -312,7 +323,8 @@ def main():
     for lang in langs:
         tag = " [DRY-RUN]" if args.dry_run else ""
         print(f"\n== {lang.upper()} | mode={args.mode} | k={args.k}{tag} ==")
-        translate_language(lang, args.mode, args.k, args.dry_run)
+        translate_language(lang, args.mode, args.k, args.dry_run,
+                           backend=args.backend)
 
     print("\n== All done. ==")
     if not args.dry_run:

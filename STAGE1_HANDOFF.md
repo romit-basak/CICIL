@@ -3,6 +3,88 @@
 Stage 1 produces the Spanish intermediate descriptions; Stage 2 translates them to
 the target language and scores them. This note is the interface between the two.
 
+## ✅ Stage 1 update — distillation + context ablation (2026-07-19)
+
+**Why:** the pilot LoRA fine-tune (19 gold Spanish pairs) came back flat —
+17.55 ± 6.52 leave-one-out vs. 16.72 ± 3.60 base, i.e. no real signal. The
+binding constraint was data, not hyperparameters, so Stage 1 pivoted to
+**deployment-aligned knowledge distillation**: Qwen2.5-VL-7B (the same model
+used as the generic-VLM baseline) generates silver Spanish targets on many more
+images, and SmolVLM-2B is trained to imitate it — using the *exact* deployment
+prompts (4 cultural-category questions + synthesis + generic), so the LoRA
+adapter stays usable by the real pipeline rather than a proxy task. Gold
+pilot captions are held out purely for eval, never trained on.
+
+**What was built:**
+- Wikimedia Commons scrape (license-filtered: PD/CC0/CC BY/CC BY-SA only) of
+  ~1,328 additional culturally-relevant images across the 5 languages, sha1+dHash
+  contamination-guarded against the gold pilot and dev/test images.
+- `src/stage1/distill_data.py`: builds (image, prompt, target) triples matching
+  deployment prompts exactly — 9,468 triples over 1,578 images (250 dev + 1,328
+  Commons), 6 tasks/image.
+- A hardened LoRA trainer (`finetune_smolvlm.py --distill`): step-level
+  checkpointing + resume (survives spot preemptions mid-epoch), gradient
+  checkpointing (required for the ~2k-token synthesis prompts on a 16GB T4).
+
+**Headline result — full distill vs. baseline vs. teacher (gold-20 Spanish proxy):**
+
+| Model | Generic | Cultural-VQA |
+|---|---|---|
+| SmolVLM-2B, off-the-shelf | 16.72 ± 3.60 | 14.09 ± 4.17 |
+| **SmolVLM-2B, distilled (final)** | **20.33 ± 3.96** | **19.24 ± 2.23** |
+| Qwen2.5-VL-7B teacher (proxy) | 21.0 | — |
+
+Distillation closes nearly all of the gap to the 7B teacher at 2B parameters —
+a real, reportable Stage 1 contribution.
+
+**Important caveat — proxy and end-to-end disagree:** the same final adapter's
+end-to-end Wixárika ChrF++ through Stage 2 is **9.17** — essentially tied with
+the un-distilled teacher pipeline (9.19), and *below* an earlier, smaller
+dev-only distill run (9.79), despite scoring higher on the Spanish proxy.
+Checked for a generation bug (repetition, empty outputs, truncation) — none
+found. Best read: **Spanish-proxy gains don't reliably transfer through Stage
+2** on this single 50-image, single-reference metric. State this as a
+limitation, not a second headline win.
+
+**Context-injection ablation (does feeding Commons descriptions to the teacher
+help?):** ran a controlled second arm — identical pipeline, but the teacher
+sees *only* the image during Commons silver-captioning (no Wikimedia text).
+
+| Metric | With teacher-context | No context | Δ |
+|---|---|---|---|
+| Gold-20 generic | 20.33 ± 3.96 | 20.49 ± 2.97 | +0.16 (noise) |
+| Gold-20 cultural-VQA | 19.24 ± 2.23 | 19.69 ± 3.85 | +0.45 (noise) |
+| End-to-end Wixárika (k=5) | 9.17 | 10.34 | +1.17 (real) |
+
+**No measured benefit from context injection** — proxy deltas sit inside the
+noise band, and end-to-end actually favors dropping it. This is a negative
+result worth stating plainly rather than oversold: the enrichment idea added
+real pipeline complexity (a full second Commons scrape + train + eval cycle)
+without a demonstrated payoff.
+
+**Caveat that bounds *all* of the end-to-end numbers above:** Wixárika's FAISS
+index is still the **20-pair pilot placeholder** built 2026-07-03
+(`indices/wixarika_pairs.jsonl`, unchanged since) — the real Mager et al. 2018
+Wixárika-Spanish corpus hasn't landed. With k=5 over only 20 candidates,
+retrieval pulls ~25% of the entire bank on every query, so the few-shot
+context Gemini sees barely changes between a better and worse Stage 1
+description. **We cannot yet distinguish "Stage 1 gains don't survive Stage
+2" from "Stage 2's retrieval isn't built out enough to show them."** Do not
+report the flat/negative end-to-end deltas above as a settled verdict on
+distillation or the context ablation — they're a provisional read under a
+placeholder retrieval bank. The other four languages have no bank at all
+(zero-shot), so this is the best-case condition we currently have, not a
+special Wixárika weakness.
+
+**Still open:** only Wixárika has been re-run end-to-end with the new adapter.
+Deploying the winning (with-context, final) adapter across all 5 languages'
+dev sets and re-running Stage 2 for a full per-language table is the next
+Stage 1 → Stage 2 handoff item — but re-running end-to-end evals once a real
+retrieval bank lands should be considered higher-priority than either of those,
+since it may change the ablation conclusions above.
+
+---
+
 ## ✅ Stage 2 RESULTS — ran end-to-end 2026-07-03 (covering for Mehek)
 
 Both arms were translated (Gemini 2.5 Flash **via Vertex AI**, ADC auth — the
