@@ -17,6 +17,7 @@ dependencies = [
     "peft>=0.19.1",
     "pillow>=12.3.0",
     "qwen-vl-utils>=0.0.14",
+    "requests>=2.34.2",
     "sacrebleu>=2.6.0",
     "safetensors>=0.8.0",
     "seaborn>=0.13.2",

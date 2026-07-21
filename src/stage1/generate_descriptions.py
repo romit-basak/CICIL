@@ -23,17 +23,32 @@ from .backends import get_backend
 from .data_io import load_split
 
 
-def _run_generic(backend, image_path) -> tuple[str, dict]:
-    return backend.caption(image_path, vqa_prompts.GENERIC_PROMPT), {}
+def _run_generic(backend, image_path, context: str | None = None) -> tuple[str, dict]:
+    prompt = vqa_prompts.with_context(vqa_prompts.GENERIC_PROMPT, context)
+    return backend.caption(image_path, prompt), {}
 
 
-def _run_cultural_vqa(backend, image_path) -> tuple[str, dict]:
+def _run_cultural_vqa(backend, image_path, context: str | None = None,
+                      joint: bool = False) -> tuple[str, dict]:
+    """Ask the cultural questions, then synthesize a grounded description.
+
+    ``context`` (silver-captioning only) prepends source metadata to every
+    teacher prompt. ``joint`` asks each category's questions in one call —
+    matching the category-level distillation pairs the student trains on
+    (and cutting 7 calls/image to 5).
+    """
     annotations: dict[str, str] = {}
     for category, questions in vqa_prompts.CULTURAL_QUESTIONS.items():
-        answers = [backend.caption(image_path, q) for q in questions]
+        if joint:
+            prompts = [vqa_prompts.joint_question(category)]
+        else:
+            prompts = questions
+        answers = [backend.caption(image_path, vqa_prompts.with_context(p, context))
+                   for p in prompts]
         annotations[category] = " ".join(a for a in answers if a)
     description = backend.caption(
-        image_path, vqa_prompts.format_synthesis(annotations)
+        image_path,
+        vqa_prompts.with_context(vqa_prompts.format_synthesis(annotations), context),
     )
     return description, annotations
 
@@ -48,6 +63,9 @@ def main() -> None:
     ap.add_argument("--adapter", default=None,
                     help="LoRA adapter dir (smolvlm backend only) for the fine-tuned Stage 1 model.")
     ap.add_argument("--limit", type=int, default=None, help="Process only the first N images.")
+    ap.add_argument("--joint-questions", action="store_true",
+                    help="cultural-vqa: one call per category (questions combined) — "
+                         "matches the distilled student's training pairs.")
     ap.add_argument("--temperature", type=float, default=0.2,
                     help="Sampling temperature (ollama only). Use 0 for deterministic decoding.")
     ap.add_argument("--seed", type=int, default=None,
@@ -61,7 +79,11 @@ def main() -> None:
     backend = get_backend(args.backend, args.model,
                           temperature=args.temperature, seed=args.seed,
                           adapter=args.adapter)
-    runner = _run_generic if args.mode == "generic" else _run_cultural_vqa
+    if args.mode == "generic":
+        runner = _run_generic
+    else:
+        def runner(b, p):  # noqa: E731 - closes over the joint flag
+            return _run_cultural_vqa(b, p, joint=args.joint_questions)
 
     config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     out_path = config.OUTPUT_DIR / f"{args.lang}_{args.split}_{args.mode}_{args.backend}.jsonl"

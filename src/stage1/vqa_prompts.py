@@ -64,3 +64,25 @@ def format_synthesis(annotations: dict[str, str]) -> str:
     """Build the synthesis prompt from {category: answer} annotations."""
     lines = [f"- {cat}: {ans}" for cat, ans in annotations.items() if ans]
     return SYNTHESIS_PROMPT.format(observations="\n".join(lines))
+
+
+# Distillation: when silver-captioning scraped images, the *teacher* may be given
+# the source's encyclopedic description as context — it names ceremonies, objects
+# and places the image alone might not reveal. The student never sees this prefix
+# (no such context exists at deployment), so training prompts stay unchanged.
+CONTEXT_PREFIX = (
+    "Contexto sobre la imagen (puede contener información útil; ignóralo si "
+    "contradice lo que ves): {context}\n\n"
+)
+
+
+def with_context(prompt: str, context: str | None) -> str:
+    """Prepend source context to a teacher prompt; no-op without context."""
+    if not context or not context.strip():
+        return prompt
+    return CONTEXT_PREFIX.format(context=context.strip()) + prompt
+
+
+def joint_question(category: str) -> str:
+    """One combined prompt per category (matches category-level training pairs)."""
+    return " ".join(CULTURAL_QUESTIONS[category])

@@ -1,9 +1,13 @@
 """Vision-language backends behind one interface: ``caption(image, prompt)``.
 
-Two interchangeable implementations of the generic Qwen2.5-VL baseline:
+Interchangeable implementations of the Qwen2.5-VL teacher:
   * OllamaBackend  — local, quantized, fast on Apple Metal (for prelim numbers).
   * HFQwenBackend  — native HuggingFace weights (reproducible for the paper;
                      3B on local MPS, 7B on GCP).
+  * VLLMBackend    — same 7B model, bf16, served via vLLM on a cloud GPU (L4);
+                     thread-safe (stateless HTTP), so many workers share one
+                     server for batched throughput. Used for Commons silver
+                     captioning at scale; not a paper-numbers backend.
 """
 
 from __future__ import annotations
@@ -21,12 +25,16 @@ class OllamaBackend:
     """
 
     def __init__(self, model: str = config.OLLAMA_VLM,
-                 temperature: float = 0.2, seed: int | None = None):
+                 temperature: float = 0.2, seed: int | None = None,
+                 num_predict: int | None = None):
         import ollama
 
         self.model = model
         self.temperature = temperature
         self.seed = seed
+        # Optional decode cap. Unbounded answers dominate wall time on long
+        # runs (silver captioning) and get clipped downstream anyway.
+        self.num_predict = num_predict
         self._client = ollama
 
     def caption(self, image_path: str | Path, prompt: str) -> str:
@@ -46,6 +54,8 @@ class OllamaBackend:
         options = {"temperature": self.temperature, "num_ctx": 8192}
         if self.seed is not None:
             options["seed"] = self.seed
+        if self.num_predict is not None:
+            options["num_predict"] = self.num_predict
         resp = self._client.chat(
             model=self.model,
             messages=[{"role": "user", "content": prompt, "images": [buf.getvalue()]}],
@@ -143,11 +153,74 @@ class SmolVLMBackend:
         return self.processor.decode(trimmed, skip_special_tokens=True).strip()
 
 
+class VLLMBackend:
+    """Qwen2.5-VL-7B via a vLLM OpenAI-compatible server (thread-safe HTTP client).
+
+    The server does its own request batching across concurrent connections, so
+    many ``caption()`` calls from a thread pool land on one GPU efficiently —
+    unlike OllamaBackend, which serializes on a single local daemon.
+    """
+
+    def __init__(self, base_url: str = "http://localhost:8000/v1",
+                 model: str = "Qwen/Qwen2.5-VL-7B-Instruct",
+                 temperature: float = 0.0, seed: int | None = 1234,
+                 max_tokens: int = 160, timeout: float = 120.0):
+        self.base_url = base_url.rstrip("/")
+        self.model = model
+        self.temperature = temperature
+        self.seed = seed
+        self.max_tokens = max_tokens
+        self.timeout = timeout
+
+    def caption(self, image_path: str | Path, prompt: str) -> str:
+        import base64
+        from io import BytesIO
+
+        import requests
+        from PIL import Image
+
+        buf = BytesIO()
+        Image.open(image_path).convert("RGB").save(buf, format="JPEG", quality=95)
+        data_url = "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
+
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": [
+                {"type": "text", "text": prompt},
+                {"type": "image_url", "image_url": {"url": data_url}},
+            ]}],
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
+        }
+        if self.seed is not None:
+            payload["seed"] = self.seed
+
+        last_exc = None
+        for attempt in range(3):
+            try:
+                resp = requests.post(f"{self.base_url}/chat/completions",
+                                     json=payload, timeout=self.timeout)
+                resp.raise_for_status()
+                return resp.json()["choices"][0]["message"]["content"].strip()
+            except requests.RequestException as exc:  # server warm-up / restart
+                last_exc = exc
+                import time
+                time.sleep(5 * (attempt + 1))
+        raise RuntimeError(f"vLLM request failed after retries: {last_exc}")
+
+
 def get_backend(name: str, model: str | None = None,
                 temperature: float = 0.2, seed: int | None = None,
-                adapter: str | None = None):
+                adapter: str | None = None, base_url: str | None = None):
     if name == "ollama":
         return OllamaBackend(model or config.OLLAMA_VLM, temperature=temperature, seed=seed)
+    if name == "vllm":
+        kwargs = {"temperature": temperature, "seed": seed}
+        if model:
+            kwargs["model"] = model
+        if base_url:
+            kwargs["base_url"] = base_url
+        return VLLMBackend(**kwargs)
     if name == "hf":
         # HFQwenBackend already decodes greedily (do_sample=False), so it is
         # deterministic and ignores temperature/seed.

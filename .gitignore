@@ -15,6 +15,11 @@ images/
 # to Mehek), but keep logs and trained adapters out of the repo.
 outputs/*.log
 outputs/adapters/
+# Commons silver JSONLs embed CC BY/BY-SA description text (the `context` field)
+# whose attribution lives only in data/external/commons/provenance.csv — keep
+# them out of the repo like the images. Regenerable via scripts/silver_caption.py.
+outputs/commons*.jsonl
+outputs/distill_triples*.jsonl
 
 # Stage 2 FAISS indices: regenerable build artifact (uv run python -m src.stage2.build_index).
 # Prediction .txt files under predictions/ are versioned (the Stage 2 hand-off to analysis).
