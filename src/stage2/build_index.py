@@ -8,36 +8,48 @@ Run once; ``translate.py`` reuses the saved indices.
 
     uv run python -m src.stage2.build_index
 
-Current reality (2026-07): the large parallel banks (AmericasNLP 2023 ~53k
-Guaraní, 2021 ~7.5k Bribri) are **not downloaded** and the dev JSONLs carry only
-``target_caption`` (no Spanish side). The one corpus with genuine Spanish↔target
-pairs is the **Wixárika pilot** (20 rows). So only ``wixarika`` gets an index;
-the other languages have no corpus here and are translated zero-shot by
-``translate.py``. Add entries to ``CORPORA`` once Nandita's banks land.
+Current reality (2026-07-24): real retrieval banks landed in ``Dataset/`` (Nandita,
+via ``byuild_corpora.py`` -- AmericasNLP 2021+2023 train+dev, deduplicated). See
+``DATA_LICENSES.md`` for source/license per file. Bribri, Guaraní, Nahuatl, and
+Wixárika all get a real index now; **Yucatec Maya has no retrieval-bank source** (not
+in AmericasNLP 2021's language list -- see ``STAGE2_HANDOFF.md``) and is still
+translated zero-shot by ``translate.py``.
 """
 
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
-from src.stage1.data_io import load_split
+from src.stage1 import config
 from .paths import ENCODER_MODEL, INDEX_DIR
 
-# (lang, split) sources that actually contain Spanish↔target pairs today.
-# Extend this dict as real retrieval banks become available.
-CORPORA: dict[str, tuple[str, str]] = {
-    "wixarika": ("wixarika", "pilot"),  # 20 pairs (only split with spanish_caption)
+DATASET_DIR = config.ROOT / "Dataset"
+
+# lang -> Dataset/*.jsonl path. Extend once a Maya retrieval-bank source is found.
+CORPORA: dict[str, Path] = {
+    "bribri": DATASET_DIR / "bribri.jsonl",
+    "guarani": DATASET_DIR / "guarani.jsonl",
+    "nahuatl": DATASET_DIR / "nahuatl.jsonl",
+    "wixarika": DATASET_DIR / "wixarika.jsonl",
 }
 
 
-def _load_pairs(lang: str, split: str) -> list[dict]:
-    """Spanish↔target pairs for a (lang, split), keeping only complete rows."""
+def _load_pairs(path: Path) -> list[dict]:
+    """Spanish↔target pairs from a Dataset/*.jsonl file, keeping only complete rows."""
+    if not path.exists():
+        raise FileNotFoundError(path)
     pairs = []
-    for ex in load_split(lang, split):
-        spanish = (ex.spanish_caption or "").strip()
-        target = (ex.target_caption or "").strip()
-        if spanish and target:
-            pairs.append({"spanish": spanish, "target": target})
+    with path.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            row = json.loads(line)
+            spanish = (row.get("spanish_caption") or "").strip()
+            target = (row.get("target_caption") or "").strip()
+            if spanish and target:
+                pairs.append({"spanish": spanish, "target": target})
     return pairs
 
 
@@ -50,10 +62,10 @@ def main() -> None:
     print(f"Loading sentence encoder: {ENCODER_MODEL}")
     encoder = SentenceTransformer(ENCODER_MODEL)
 
-    for lang, (src_lang, split) in CORPORA.items():
-        print(f"\n-- {lang.upper()} ({src_lang}/{split}) " + "-" * 30)
+    for lang, path in CORPORA.items():
+        print(f"\n-- {lang.upper()} ({path.relative_to(config.ROOT)}) " + "-" * 30)
         try:
-            pairs = _load_pairs(src_lang, split)
+            pairs = _load_pairs(path)
         except FileNotFoundError as e:
             print(f"  WARNING: {e} -- skipping.")
             continue

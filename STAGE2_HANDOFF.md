@@ -52,23 +52,30 @@ truth) composes both:
 backend at a time (defaults to `ollama`; pass `--backend smolvlm` once the distilled
 adapter's outputs cover all 5 languages, not just Wixárika).
 
-## 2. Building the missing retrieval banks
+## 2. Retrieval banks — landed (2026-07-24)
 
-`build_index.CORPORA` currently has exactly one entry (`wixarika`, the 20-pair pilot
-placeholder). The other four languages translate zero-shot until real corpora are added.
-Confirmed sources (verified real — repo/package existence checked directly):
+**Update:** Nandita built and pushed the real banks (`Dataset/{bribri,guarani,nahuatl,
+wixarika}.jsonl`, via `byuild_corpora.py` — AmericasNLP 2021+2023 train+dev,
+deduplicated). `build_index.CORPORA` now points at all four; `build_index.py` loads and
+indexes them for real. See `DATA_LICENSES.md` for source/license per file — Wixárika's
+underlying corpus is CC BY-NC 4.0, the other three have no explicit license but follow
+the same cite-the-source norm the AmericasNLP org itself uses.
 
-| Language | Source | Size | How to get it |
-|---|---|---|---|
-| Bribri | `github.com/AmericasNLP/americasnlp2021`, `data/bribri-spanish/` | 7,506 pairs | `git clone`, direct download |
-| Guaraní | `AmericasNLP/americasnlp2023` train data + MultiScript30k (Driggers-Ellis et al. 2025, ~30k **synthetic**, NLLB-generated) | ~53k | `git clone` + cite the synthetic-data caveat |
-| Wixárika (real bank) | Same 2021 repo, `data/wixarika-spanish/`, or `github.com/pywirrarika/wixarikacorpora` (Mager et al. 2018) | ~8,966 pairs | `git clone` |
-| Nahuatl | `pip install py-elotl` → `elotl.corpus.load('axolotl')` | ~12–16k pairs | pip package, no manual download |
-| Yucatec Maya | **Not found.** Not in AmericasNLP 2021's language list; neither related paper below cites a retrieval source for it either. | — | Needs its own dedicated search — flag as a known open gap, don't assume it'll turn up. |
+Actual sizes that landed (post-dedup, from `byuild_corpora.py`'s own AmericasNLP
+2021+2023 train+dev concatenation — somewhat different from the pre-verification
+estimates below, since those were sourced from repo READMEs before the real dedup ran):
 
-Once those land: reformat to `{"spanish": ..., "target": ...}` pairs, add 4 lines to
-`build_index.CORPORA`, run `build_index.py`, then `run_sweep.py` — the "one command"
-moment `run_sweep.py`/`run_ablations.py` were built for.
+| Language | Pairs (actual) | Source |
+|---|---|---|
+| Bribri | 8,297 | AmericasNLP 2021+2023, `bribri-spanish/` |
+| Guaraní | 15,494 | AmericasNLP 2021+2023, `guarani-spanish/` (MultiScript30k **not** included — see `DATA_LICENSES.md`) |
+| Nahuatl | 16,119 | AmericasNLP 2021+2023, `nahuatl-spanish/` (py-elotl **not** used) |
+| Wixárika | 9,940 | AmericasNLP 2021+2023, `wixarika-spanish/` |
+| Yucatec Maya | **0 — still no source.** | Not in AmericasNLP 2021's language list; neither related paper below cites a retrieval source for it either. Needs its own dedicated search — flag as a known open gap, don't assume it'll turn up. |
+
+Next step: run `build_index.py` for real (builds + saves the FAISS indices to
+`indices/`), then `run_sweep.py` — the "one command" moment `run_sweep.py`/
+`run_ablations.py` were built for, now unblocked for 4 of 5 languages.
 
 **On the two related papers below — read them directly, don't cite this summary:**
 Two real, highly relevant sources for this exact shared task were found while preparing
