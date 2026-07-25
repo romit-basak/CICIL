@@ -53,8 +53,9 @@ Then send Table 2 + the k-ablation tables to Tisha and Romit.
   prelim bare-filename predictions (and Table 1's numbers) are untouched — they remain
   the prelim record. Do **not** re-run bare `--query-arm auto` runs over them.
 - You are **not blocked on Romit** for any of the above. His distilled-adapter
-  (`--backend smolvlm`) rows arrive separately (target: within ~2 days) and don't touch
-  any file your sweep produces.
+  (`--backend smolvlm`) rows are **already done** (table below, committed 2026-07-25)
+  and don't touch any file your sweep produces. **Stage 1 is complete** — all 5
+  languages × both modes exist under both backends (ollama + distilled smolvlm).
 
 ### ⚠️ First real-bank result (2026-07-25) — read before interpreting your sweep
 
@@ -111,12 +112,12 @@ retrieval hardest.
 
 ## ✅ Stage 1 update — distillation + context ablation (2026-07-19)
 
-> **⚠️ Superseded-pending-rerun (added 2026-07-25):** every end-to-end number in this
-> section was measured against the 20-pair Wixárika placeholder bank. Real banks have
-> now landed for all 5 languages; the two distilled Wixárika arms are being re-run
-> against the real bank first (results will be recorded in the 2026-07-25 section
-> above) and may revise the proxy-vs-end-to-end conclusions below. Treat the gold-20
-> proxy numbers as final and the end-to-end numbers as historical.
+> **⚠️ Superseded (2026-07-25, re-run complete):** every end-to-end number in this
+> section was measured against the 20-pair Wixárika placeholder bank. The real-bank
+> re-run is done and recorded in the 2026-07-25 section above: the context-ablation
+> gap was a placeholder artifact (arms tied at 8.22/8.23), and both arms scored lower
+> under the bigger-but-out-of-domain real bank. Treat the gold-20 proxy numbers here
+> as final and the end-to-end numbers as historical.
 
 **Why:** the pilot LoRA fine-tune (19 gold Spanish pairs) came back flat —
 17.55 ± 6.52 leave-one-out vs. 16.72 ± 3.60 base, i.e. no real signal. The
