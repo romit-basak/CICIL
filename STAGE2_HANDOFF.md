@@ -52,18 +52,21 @@ truth) composes both:
 backend at a time (defaults to `ollama`; pass `--backend smolvlm` once the distilled
 adapter's outputs cover all 5 languages, not just Wixárika).
 
-## 2. Retrieval banks — landed (2026-07-24)
+## 2. Retrieval banks — all 5 languages landed (2026-07-25)
 
-**Update:** Nandita built and pushed the real banks (`Dataset/{bribri,guarani,nahuatl,
+**Update:** Nandita built and pushed 4 real banks (`Dataset/{bribri,guarani,nahuatl,
 wixarika}.jsonl`, via `byuild_corpora.py` — AmericasNLP 2021+2023 train+dev,
-deduplicated). `build_index.CORPORA` now points at all four; `build_index.py` loads and
-indexes them for real. See `DATA_LICENSES.md` for source/license per file — Wixárika's
-underlying corpus is CC BY-NC 4.0, the other three have no explicit license but follow
-the same cite-the-source norm the AmericasNLP org itself uses.
+deduplicated). Yucatec Maya was the last gap — resolved by pulling YUA-ES-CCC
+(Molina-Villegas et al., 2026), a real, CC-BY-4.0, purpose-built Yucatec Maya–Spanish
+corpus released June 2026 at `github.com/alemol/yua-es-ccc` (cloned and verified live).
+`build_index.CORPORA` now points at all 5; `build_index.py` loads and indexes all of
+them for real. See `DATA_LICENSES.md` for source/license per file — Wixárika is CC
+BY-NC 4.0, Maya is CC BY-4.0 (no NC restriction, the cleanest of the 5), the other
+three have no explicit license but follow the same cite-the-source norm the AmericasNLP
+org itself uses.
 
-Actual sizes that landed (post-dedup, from `byuild_corpora.py`'s own AmericasNLP
-2021+2023 train+dev concatenation — somewhat different from the pre-verification
-estimates below, since those were sourced from repo READMEs before the real dedup ran):
+Actual sizes that landed (post-dedup for the AmericasNLP-sourced 4; Maya is the
+YUA-ES-CCC release as-is):
 
 | Language | Pairs (actual) | Source |
 |---|---|---|
@@ -71,11 +74,18 @@ estimates below, since those were sourced from repo READMEs before the real dedu
 | Guaraní | 15,494 | AmericasNLP 2021+2023, `guarani-spanish/` (MultiScript30k **not** included — see `DATA_LICENSES.md`) |
 | Nahuatl | 16,119 | AmericasNLP 2021+2023, `nahuatl-spanish/` (py-elotl **not** used) |
 | Wixárika | 9,940 | AmericasNLP 2021+2023, `wixarika-spanish/` |
-| Yucatec Maya | **0 — still no source.** | Not in AmericasNLP 2021's language list; neither related paper below cites a retrieval source for it either. Needs its own dedicated search — flag as a known open gap, don't assume it'll turn up. |
+| Yucatec Maya | 14,332 | YUA-ES-CCC, `github.com/alemol/yua-es-ccc` (CC-BY-4.0) |
+
+**Sources checked and ruled out for Maya, in case they resurface as a suggestion:**
+MayanV (CC0, 15 Mayan languages, does not include Yucatec); the jw.org/JW300-derived
+Yucatec corpus (large, but legally non-distributable — see `DATA_LICENSES.md` for the
+Masakhane precedent); AmericasNLP 2024 ST2's Maya data (real, but it's a Maya→Maya
+morphosyntactic-transformation task, not Spanish-paired); CPLM (no license, no
+downloadable release). Full detail in `DATA_LICENSES.md`.
 
 Next step: run `build_index.py` for real (builds + saves the FAISS indices to
 `indices/`), then `run_sweep.py` — the "one command" moment `run_sweep.py`/
-`run_ablations.py` were built for, now unblocked for 4 of 5 languages.
+`run_ablations.py` were built for, now unblocked for all 5 languages.
 
 **On the two related papers below — read them directly, don't cite this summary:**
 Two real, highly relevant sources for this exact shared task were found while preparing

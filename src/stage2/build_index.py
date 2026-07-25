@@ -8,12 +8,11 @@ Run once; ``translate.py`` reuses the saved indices.
 
     uv run python -m src.stage2.build_index
 
-Current reality (2026-07-24): real retrieval banks landed in ``Dataset/`` (Nandita,
-via ``byuild_corpora.py`` -- AmericasNLP 2021+2023 train+dev, deduplicated). See
-``DATA_LICENSES.md`` for source/license per file. Bribri, Guaraní, Nahuatl, and
-Wixárika all get a real index now; **Yucatec Maya has no retrieval-bank source** (not
-in AmericasNLP 2021's language list -- see ``STAGE2_HANDOFF.md``) and is still
-translated zero-shot by ``translate.py``.
+Current reality (2026-07-25): all 5 languages now have a real retrieval bank in
+``Dataset/``. Bribri/Guaraní/Nahuatl/Wixárika landed via Nandita's
+``byuild_corpora.py`` (AmericasNLP 2021+2023 train+dev, deduplicated); Yucatec Maya
+comes from YUA-ES-CCC (Molina-Villegas et al., 2026, CC-BY-4.0) -- see
+``DATA_LICENSES.md`` for source/license per file.
 """
 
 from __future__ import annotations
@@ -26,12 +25,13 @@ from .paths import ENCODER_MODEL, INDEX_DIR
 
 DATASET_DIR = config.ROOT / "Dataset"
 
-# lang -> Dataset/*.jsonl path. Extend once a Maya retrieval-bank source is found.
+# lang -> Dataset/*.jsonl path. All 5 languages now have a real bank.
 CORPORA: dict[str, Path] = {
     "bribri": DATASET_DIR / "bribri.jsonl",
     "guarani": DATASET_DIR / "guarani.jsonl",
     "nahuatl": DATASET_DIR / "nahuatl.jsonl",
     "wixarika": DATASET_DIR / "wixarika.jsonl",
+    "maya": DATASET_DIR / "maya.jsonl",
 }
 
 
