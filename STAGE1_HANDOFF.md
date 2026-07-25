@@ -56,6 +56,10 @@ Then send Table 2 + the k-ablation tables to Tisha and Romit.
   (`--backend smolvlm`) rows are **already done** (table below, committed 2026-07-25)
   and don't touch any file your sweep produces. **Stage 1 is complete** — all 5
   languages × both modes exist under both backends (ollama + distilled smolvlm).
+- **Human-eval tooling is ready (2026-07-25)** — Tisha is unblocked: annotation runs
+  in a local HTML tool with English pivot translations (no Spanish needed, no GCP
+  needed for annotators — just the repo + dataset checked out). Workflow and the
+  target-language scope decision: `analysis/human_eval/RUBRIC.md`.
 
 ### ⚠️ First real-bank result (2026-07-25) — read before interpreting your sweep
 

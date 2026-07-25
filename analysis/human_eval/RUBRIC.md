@@ -20,18 +20,41 @@ cultural-VQA arm (the mapping lives in `sample_key.csv`, used only at analysis
 time). Annotators score A and B independently on every dimension, then record a
 preference.
 
-Two sheets are produced, because the team reads Spanish but not the target
-languages:
+Annotation happens in **`human_eval.html`** (built by `build_interface.py`): the
+image on top, and for each caption its English translation (judge this), the
+original Spanish (Stage 1 output), and the target-language caption (Stage 2
+output — display only, never scored).
 
-| Sheet | Text judged | Who annotates | Answers |
-|---|---|---|---|
-| `sample_spanish.csv` | Stage-1 **Spanish** description | the team, now | isolates Stage 1 (RQ1/RQ3) |
-| `sample_target.csv` | final **target-language** caption | native/heritage speakers | end-to-end quality |
+### English-assisted annotation (protocol change, 2026-07-25)
 
-Judge the Spanish sheet against the image. The target sheet needs a speaker of the
-language; where none is available, leave it for recruited annotators and report the
-Spanish-side results as the primary human evaluation (as the paper already does for
-Stage 1 intrinsic quality).
+No team member reads Spanish well enough to annotate directly, so annotators judge
+each Spanish caption **via a Gemini ES→EN translation** displayed alongside it
+(`translate_english.py`, run once, temperature 0). ES→EN is a high-resource
+direction where LLM translation is state-of-the-art: Hendy et al. (2023,
+arXiv:2302.09210) find GPT-class models "achieve very competitive translation
+quality for high resource languages, while having limited capabilities for low
+resource languages," and the WMT23 findings (Kocmi et al., 2023,
+aclanthology.org/2023.wmt-1.1) ranked GPT-4 top across most high-resource
+directions. The pivot therefore adds far less noise than the 0–2 dimensions it
+supports — and note the same asymmetry is this project's whole premise: ES→EN is
+reliable in exactly the way ES→Maya/Bribri/Wixárika is not.
+
+**Honest caveats to state in the paper:** cultural-accuracy judgments of *Spanish
+word choice* are limited by the pivot (a mistranslated cultural term could mask or
+invent an error); and the **fluency dimension measures the content's coherence**
+(repetition loops, truncation, incoherence survive translation), **not Spanish
+grammar**, which is out of reach through a pivot.
+
+### Scope decision: target-language evaluation is future work
+
+The target-language sheet (`sample_target.csv`) is built, blinded identically, and
+ready — but **unscored by design**: no native/heritage speakers of the five
+languages were available within the project window, and machine-pivoting an
+extremely-low-resource language for evaluation would be circular (judging MT output
+through more MT of the same weak direction). This is a deliberate scope decision,
+reported as such: end-to-end target-language human evaluation is future work with
+recruited speakers, for whom the sheet is ready to hand over. The interface shows
+the target captions for reference only.
 
 ---
 
@@ -110,6 +133,24 @@ kinship). Category notes feed RQ3.
 |---|---|
 | `RUBRIC.md` | this document — give it to every annotator |
 | `build_sample.py` | draws the stratified, blinded sample and writes the sheets |
-| `sample_spanish.csv` | annotation sheet, Stage-1 Spanish (fill the score columns) |
-| `sample_target.csv` | annotation sheet, target-language captions |
-| `sample_key.csv` | A/B → arm un-blinding map (for analysis only — do not show annotators) |
+| `sample_spanish.csv` | the sampled Stage-1 Spanish captions (source of truth for the interface) |
+| `sample_english.csv` | Gemini ES→EN translations of the sample (`translate_english.py`) |
+| `sample_target.csv` | target-language captions — display-only now; ready for future speaker annotators |
+| `sample_key.csv` | A/B → arm un-blinding map (analysis only — never shown to annotators, never embedded in the HTML) |
+| `translate_english.py` | one-shot ES→EN via Vertex Gemini (needs GCP ADC; run once) |
+| `build_interface.py` | generates `human_eval.html` from the three sample CSVs |
+| `human_eval.html` | the annotation interface — open locally, no server needed |
+| `results/` | exported results CSVs go here (one per annotator) |
+| `score_results.py` | un-blinds, aggregates per-arm means/preference/per-category, computes weighted κ |
+
+## Annotation workflow
+
+1. One-time (already done): `uv run python -m analysis.human_eval.translate_english`
+   then `uv run python -m analysis.human_eval.build_interface`.
+2. Each annotator: open `human_eval.html` in a browser (repo checked out with the
+   dataset at `data/americasnlp2026/` for the images), enter your name, score all 15
+   items, click **Export results CSV**, move the download into
+   `analysis/human_eval/results/`, commit it.
+3. Analysis: `uv run python -m analysis.human_eval.score_results` (needs ≥2
+   annotators for κ). Progress autosaves in the browser (localStorage) per
+   annotator name — closing the tab loses nothing.

@@ -50,17 +50,27 @@ via the labels CSV / override, not a black box.
 ## 3. Human-evaluation kit — `human_eval/`
 
 Measures what ChrF++ can't: cultural accuracy, image faithfulness, fluency.
+Annotation is **English-assisted** (no team member reads Spanish — see RUBRIC.md's
+protocol section and citations) and happens in a local, zero-backend HTML tool.
 
 ```bash
-python -m analysis.human_eval.build_sample     # 5 langs x 3 images x 2 arms = 30 captions/sheet
+python -m analysis.human_eval.build_sample        # (already run) 5 langs x 3 images x 2 arms
+uv run python -m analysis.human_eval.translate_english   # (already run) ES→EN via Vertex, once
+python -m analysis.human_eval.build_interface     # -> human_eval.html
+# each annotator: open human_eval.html, score, Export CSV -> results/
+python -m analysis.human_eval.score_results       # un-blind + aggregate + weighted κ
 ```
 
-- `human_eval/RUBRIC.md` — the 3-point cultural-accuracy rubric (+ faithfulness,
-  fluency, preference), anchors and protocol (blind A/B, double annotation, κ).
-- `human_eval/sample_spanish.csv` — Stage-1 Spanish descriptions (team-annotatable now).
-- `human_eval/sample_target.csv` — target-language captions (native/heritage speakers).
-- `human_eval/sample_key.csv` — A/B → arm un-blinding map (analysis only; do not show
-  annotators).
+- `human_eval/RUBRIC.md` — rubric anchors + protocol (blind A/B, double annotation,
+  κ), the English-pivot rationale/caveats, and the target-language scope decision.
+- `human_eval/human_eval.html` — annotation interface (image + English/Spanish/target
+  panels + rubric form; autosaves to localStorage; exports results CSV). Requires the
+  dataset at `data/americasnlp2026/` for images; no server.
+- `human_eval/sample_key.csv` — A/B → arm un-blinding map (analysis only; never shown
+  to annotators, never embedded in the HTML).
+- **Target-language captions are display-only by scope decision** — no native/heritage
+  speakers were available; `sample_target.csv` is ready for future recruited
+  annotators (see RUBRIC.md).
 
 Sampling is stratified by cultural category (reuses the RQ3 labels) and blinded
 (arm hidden, order randomized), deterministic under `--seed`.
