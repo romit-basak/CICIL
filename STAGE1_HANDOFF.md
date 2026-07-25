@@ -3,7 +3,96 @@
 Stage 1 produces the Spanish intermediate descriptions; Stage 2 translates them to
 the target language and scores them. This note is the interface between the two.
 
+## 🚀 2026-07-25 — Banks landed: run the sweep now (nothing left to build)
+
+**Framing up front: your part has no construction work left.** The Phase2.zip merge
+integrated all your Stage 2 code (`--query-arm`, `run_sweep.py`, the new
+`run_ablations.py` tables); the retrieval banks for **all 5 languages** are committed
+in `Dataset/` and wired into `build_index.py` (including a brand-new Yucatec Maya bank
+— YUA-ES-CCC, CC-BY-4.0, 14,332 pairs; provenance in `DATA_LICENSES.md` and
+`STAGE2_HANDOFF.md` §2). Your entire remaining job is a one-time GCP setup plus
+running four commands in order and forwarding the tables. Total API cost ≈ $2 of
+Gemini Flash calls.
+
+### One-time GCP/Vertex setup (before the real sweep)
+
+1. Claim your GCP education grant (redeem the course coupon link — the credits attach
+   to a billing account), create a project, and link that billing account to it in the
+   console.
+2. Enable the Vertex AI API on the project: `gcloud services enable
+   aiplatform.googleapis.com` (or via console → Vertex AI → Enable).
+3. Install the gcloud CLI, then authenticate:
+   ```bash
+   gcloud auth application-default login
+   gcloud auth application-default set-quota-project <YOUR-PROJECT-ID>
+   ```
+4. **Mandatory, not optional:** `export GOOGLE_CLOUD_PROJECT=<YOUR-PROJECT-ID>` (add it
+   to your shell profile or the repo `.env`). If unset, `translate.py` falls back to
+   Romit's project id (`cicil-501318`) — you don't have IAM access to it, so every call
+   will fail with a `403 PERMISSION_DENIED` naming a project you don't recognize. The
+   fix for that confusing error is this export, set up front.
+5. **Why Vertex and not AI Studio:** the education grant covers Vertex only, and the AI
+   Studio free tier trains on submitted data — incompatible with the CC BY-NC CICIL
+   data. This is a license requirement, not a preference.
+
+### The commands (in order)
+
+```bash
+git pull
+uv run python -m src.stage2.build_index        # ~10-30 min, one-time, builds indices/ locally
+uv run python -m src.stage2.run_sweep --dry-run  # wiring check, no auth/API needed — can run before GCP setup
+uv run python -m src.stage2.run_sweep          # the real thing: 45 runs ≈ 2,250 Gemini calls ≈ 2.5-5 h
+uv run python -m src.stage2.run_ablations      # scores everything, prints Table 2 + k-ablation tables
+```
+
+Then send Table 2 + the k-ablation tables to Tisha and Romit.
+
+### What not to worry about
+
+- Your sweep only writes `_culturalquery_`/`_textquery_`-tagged prediction files. The
+  prelim bare-filename predictions (and Table 1's numbers) are untouched — they remain
+  the prelim record. Do **not** re-run bare `--query-arm auto` runs over them.
+- You are **not blocked on Romit** for any of the above. His distilled-adapter
+  (`--backend smolvlm`) rows arrive separately (target: within ~2 days) and don't touch
+  any file your sweep produces.
+
+### ⚠️ First real-bank result (2026-07-25) — read before interpreting your sweep
+
+The two distilled Wixárika arms were re-run against the real 9,940-pair bank as the
+first test of the new indices:
+
+| Arm | Placeholder bank (20 in-domain pilot pairs) | Real bank (9,940 pairs) |
+|---|---|---|
+| distill_full (`smolvlm`) | 9.17 | **8.22** |
+| distill_noctx (`smolvlm-noctx`) | 10.34 | **8.23** |
+
+Two takeaways. **(1) The context-ablation "gap" evaporated under a real bank** — the
+two adapters are now indistinguishable (Δ 0.01), confirming the earlier +1.17 was a
+placeholder-bank artifact, not a real effect. **(2) Both scores *dropped* when the bank
+got 500× bigger.** Best hypothesis: domain mismatch — the old placeholder was 20
+*in-domain* CICIL pilot captions, while `Dataset/wixarika.jsonl` is Mager et al.'s
+corpus (largely narrative/fairy-tale register: Cinderella, spinning wheels), so k=5 now
+retrieves fluent-but-irrelevant examples. This matches the winning 2026 submission's
+finding that retrieval helps mainly with large *in-domain* corpora. Repetition loops
+are also visible in several outputs (the known low-resource degeneration).
+
+**Implication for your sweep:** if per-language results look flat or negative, check
+the retrieved examples' register before concluding retrieval doesn't work — bank
+domain match, not bank size, may be the binding variable. Worth an explicit
+paragraph in the paper either way. (A quick follow-up worth considering if time
+allows: append the 20 pilot pairs to each bank so in-domain examples can win the
+similarity search when they're genuinely closest.)
+
+---
+
 ## ✅ Stage 1 update — distillation + context ablation (2026-07-19)
+
+> **⚠️ Superseded-pending-rerun (added 2026-07-25):** every end-to-end number in this
+> section was measured against the 20-pair Wixárika placeholder bank. Real banks have
+> now landed for all 5 languages; the two distilled Wixárika arms are being re-run
+> against the real bank first (results will be recorded in the 2026-07-25 section
+> above) and may revise the proxy-vs-end-to-end conclusions below. Treat the gold-20
+> proxy numbers as final and the end-to-end numbers as historical.
 
 **Why:** the pilot LoRA fine-tune (19 gold Spanish pairs) came back flat —
 17.55 ± 6.52 leave-one-out vs. 16.72 ± 3.60 base, i.e. no real signal. The
