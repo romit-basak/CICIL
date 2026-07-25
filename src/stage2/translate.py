@@ -76,6 +76,9 @@ INDEXED_LANGS = {"wixarika"}
 BACKEND_CHOICES = ["ollama", "smolvlm", "hf", "vllm", "smolvlm-devonly", "smolvlm-noctx"]
 
 GEMINI_MODEL = "gemini-2.5-flash"
+# Decoding: see call_gemini's docstring for the ablation behind these values.
+GEMINI_TEMPERATURE = 0.7
+GEMINI_SEED = 20260725
 
 # Vertex AI backend (the Education grant covers Vertex, but NOT the AI Studio /
 # Gemini Developer API paid tier). Auth is via Application Default Credentials
@@ -189,7 +192,16 @@ def _get_client():
 
 
 def call_gemini(prompt: str) -> str:
-    """Call Gemini 2.5 Flash on Vertex AI. Deterministic (temperature 0)."""
+    """Call Gemini 2.5 Flash on Vertex AI. Sampled at a fixed seed.
+
+    Was temperature 0 through the prelim runs, but greedy decoding degenerates
+    into repetition loops on the lowest-resource languages (86% of Wixárika /
+    64% of Bribri dev captions). A/B ablation (2026-07-25): frequency_penalty
+    left both rate and ChrF++ unchanged, while temperature 0.7 cut degeneration
+    to ~30% and raised ChrF++ (+4.96 Wixárika, +1.72 Bribri) with no regression
+    on a healthy-language check (Guaraní +0.64). Seed pinned for
+    reproducibility; prelim temp-0 numbers remain the documented prelim record.
+    """
     from google.genai import types
 
     response = _get_client().models.generate_content(
@@ -197,14 +209,15 @@ def call_gemini(prompt: str) -> str:
         contents=prompt,
         config=types.GenerateContentConfig(
             system_instruction=SYSTEM_PROMPT,
-            temperature=0.0,
+            temperature=GEMINI_TEMPERATURE,
+            seed=GEMINI_SEED,
             # Disable 2.5-Flash "thinking": translation needs no reasoning trace,
             # and the default dynamic budget adds ~30 s/call (and thinking-token cost).
             thinking_config=types.ThinkingConfig(thinking_budget=0),
-            # A caption is one short sentence. Cap output so greedy repetition
-            # loops on very low-resource languages (zero-shot Bribri etc.) can't
-            # run to a huge length — bounds latency/cost; truncated degenerate
-            # text still scores as poor (the honest RQ2 result is unchanged).
+            # A caption is one short sentence. Cap output so any residual
+            # repetition loop on very low-resource languages can't run to a
+            # huge length — bounds latency/cost; truncated degenerate text
+            # still scores as poor (the honest RQ2 result is unchanged).
             max_output_tokens=128,
         ),
     )

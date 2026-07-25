@@ -35,6 +35,17 @@ Gemini Flash calls.
    Studio free tier trains on submitted data — incompatible with the CC BY-NC CICIL
    data. This is a license requirement, not a preference.
 
+### ⚠️ Decoding config changed 2026-07-25 — pull before running the sweep
+
+`translate.py` now samples at `temperature=0.7` with a pinned seed (was greedy /
+temp 0). Reason: greedy decoding degenerated into repetition loops on 64% of
+Bribri and 86% of Wixárika dev captions; an A/B showed frequency penalties don't
+fix it but temperature does (+1.7/+5.0 ChrF++, degeneration cut to ~30%), with no
+regression on Guaraní (+0.64). Full table in `analysis/human_eval/paper_notes.md`.
+Your sweep inherits this automatically — just make sure you've pulled. Don't
+re-run the prelim bare-filename predictions; they stay temp-0 as the prelim
+record.
+
 ### The commands (in order)
 
 ```bash

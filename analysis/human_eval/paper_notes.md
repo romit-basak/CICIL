@@ -51,12 +51,37 @@ visible cultural content.
 ### 4. S007–S009, S013, S015 — what ChrF++ actually rewarded
 
 10 of 12 Wixárika/Bribri target captions in the sample are **degenerate repetition
-loops** (unique-token ratio 6–26%; e.g. "t+kame" × 32). These are the same
-predictions behind the reported Wixárika ~9 / Bribri ~5 ChrF++: character-overlap
-metrics award nontrivial scores to completely broken output. (Known issue — see
-STAGE1_HANDOFF "greedy decoding degenerated" — but the human-eval sample makes it
-concrete and citable. The target-language fluency dimension would score these 0;
-that evaluation is future work, below.)
+loops** (unique-token ratio 6–26%; e.g. "t+kame" × 32). Full-corpus rates (smolvlm
+arm, real banks): **Bribri 32/50 (64%), Wixárika 43/50 (86%)** of dev captions.
+These are the predictions behind the reported Wixárika ~8–9 / Bribri ~5 ChrF++:
+character-overlap metrics award nontrivial scores to completely broken output.
+(The target-language fluency dimension would score these 0; that evaluation is
+future work, below.)
+
+**Decoding ablation (2026-07-25) — a two-part result worth its own paragraph:**
+all arms cultural-vqa, k=5, smolvlm backend, real banks, otherwise-identical config.
+
+| Arm | Bribri ChrF++ | Bribri degen | Wixárika ChrF++ | Wixárika degen |
+|---|---|---|---|---|
+| temperature 0 (greedy, prelim config) | 5.09 | 32/50 | 8.22 | 43/50 |
+| + frequency_penalty 0.7 | 4.86 | 34/50 | 8.54 | 43/50 |
+| temperature 0.7, fixed seed | **6.81** | **14/50** | **13.18** | **15/50** |
+
+Healthy-language regression check: Guaraní 18.78 → 19.42 (+0.64, no degeneration
+in either arm) — no cost to the languages that were already fine.
+
+Reading: **frequency penalties don't break the loops** (they mutate into token
+variants and multi-token phrase cycles per-token penalties barely touch), but
+**sampling does** — greedy decoding is specifically pathological here (the argmax
+path enters the repetition attractor and cannot leave; cf. Holtzman et al. 2019),
+and stochastic decoding escapes it, recovering +1.7 (Bribri) to +5.0 (Wixárika)
+ChrF++ and cutting degeneration by ~two-thirds. The remaining gap to the official
+baselines is the real competence limitation; roughly a third of Wixárika's
+apparent deficit was decoding artifact. Adopted into `translate.py`
+(`temperature=0.7`, pinned seed) as of 2026-07-25 — all subsequent runs (including
+the retrieval-arm sweep) use it; prelim temp-0 numbers remain the prelim record.
+Caveats: single seed, n=50/language; the degeneration-rate drop is mechanical and
+robust, exact ChrF++ deltas carry sampling variance.
 
 ## Quantitative context
 
