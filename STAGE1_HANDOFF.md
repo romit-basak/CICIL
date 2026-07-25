@@ -83,6 +83,30 @@ paragraph in the paper either way. (A quick follow-up worth considering if time
 allows: append the 20 pilot pairs to each bank so in-domain examples can win the
 similarity search when they're genuinely closest.)
 
+### Distilled-adapter rows — all 5 languages, real banks (2026-07-25, complete)
+
+The distilled SmolVLM (`distill_full`) Stage 1 outputs now exist for **all 5
+languages × both modes** (`outputs/{lang}_dev_{mode}_smolvlm.jsonl`, 50 records each,
+id-aligned with the ollama files), translated through Stage 2 with the **real** banks
+(k=5, query-arm auto):
+
+| Language | Generic | Cultural-VQA | Δ (cultural − generic) |
+|---|---|---|---|
+| Guaraní | 18.64 | 18.78 | +0.14 |
+| Bribri | 5.01 | 5.09 | +0.08 |
+| Yucatec Maya | 19.80 | 19.97 | +0.17 |
+| Wixárika | 9.82 | 8.22 | **−1.60** |
+| Nahuatl | 15.29 | 16.01 | +0.72 |
+
+**Do not compare these against the prelim Table 1 ollama numbers directly** — those
+were run zero-shot (no banks) / 20-pair placeholder, so backend AND bank changed at
+once. The clean ollama-vs-distilled comparison exists only after your sweep produces
+ollama rows under the same real banks (your `generic+text` arm is the matching
+control). Within this table (same bank, same backend), cultural-VQA is +0.1–0.7 on
+four languages (mostly within noise; Nahuatl again the largest) and −1.60 on Wixárika
+— consistent with the domain-mismatch problem above hitting the culturally-keyed
+retrieval hardest.
+
 ---
 
 ## ✅ Stage 1 update — distillation + context ablation (2026-07-19)
