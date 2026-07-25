@@ -70,17 +70,54 @@ class Retriever:
         return [self.pairs[i] for i in indices[0] if 0 <= i < len(self.pairs)]
 
 
-def build_query_from_record(record: dict) -> str:
+def _cultural_annotation_query(record: dict) -> str:
+    """Join cultural-annotation values into a single query string, or ''."""
+    annotations = record.get("cultural_annotations", {}) or {}
+    parts = [f"{k}: {v}" for k, v in annotations.items() if v and str(v).strip()]
+    return "  ".join(parts)
+
+
+def build_query_from_record(record: dict, query_arm: str = "auto") -> str:
     """Retrieval query from a Stage 1 record — the key Stage 1↔2 coupling.
 
-    Cultural-VQA arm (``cultural_annotations`` populated): query on the cultural
-    annotation values, so retrieval targets cultural relevance over surface
-    lexical similarity. Generic arm (empty annotations): fall back to the
-    generated Spanish description.
+    This is the RQ1 headline switch: "does culturally-indexed retrieval beat
+    vanilla text retrieval?" is only a real test if the query strategy can be
+    set independently of the Stage 1 prompt mode. Three arms:
+
+    query_arm="cultural"
+        Force the cultural-annotation query (join annotation values) so
+        retrieval is indexed on cultural relevance rather than surface
+        lexical similarity. If a record genuinely carries no annotations
+        (e.g. a generic-mode record run through this arm by mistake), falls
+        back to the Spanish text so the pipeline doesn't crash or emit an
+        empty query -- but that fallback should be rare/absent for records
+        actually drawn from the cultural-vqa split.
+    query_arm="text"
+        Force the plain Spanish-text query, regardless of whether cultural
+        annotations are present. This is the vanilla-retrieval control arm:
+        same k, same index, same prompt template -- only the query changes.
+    query_arm="auto" (default; pre-ablation / back-compat behavior)
+        Cultural annotations if present, else Spanish text. This is what the
+        pipeline did before the arms were split out, and it silently couples
+        query strategy to Stage 1 prompt mode (cultural-vqa records always
+        got cultural queries, generic records always got text queries) --
+        which is exactly the confound the "cultural" / "text" arms above are
+        for. Kept only so existing callers that don't pass query_arm keep
+        their old behavior.
     """
-    annotations = record.get("cultural_annotations", {})
-    if annotations:
-        parts = [f"{k}: {v}" for k, v in annotations.items() if v and str(v).strip()]
-        if parts:
-            return "  ".join(parts)
-    return record.get("generated_spanish", "")
+    if query_arm not in ("auto", "cultural", "text"):
+        raise ValueError(
+            f"Unknown query_arm: {query_arm!r} (expected 'auto', 'cultural', or 'text')"
+        )
+
+    spanish_text = record.get("generated_spanish", "")
+
+    if query_arm == "text":
+        return spanish_text
+
+    cultural_query = _cultural_annotation_query(record)
+    if query_arm == "cultural":
+        return cultural_query or spanish_text
+
+    # auto
+    return cultural_query or spanish_text

@@ -93,6 +93,9 @@ Education grant covers Vertex but *not* the AI Studio paid tier) and scored with
 from `Mehek/`): `build_index → translate → run_ablations`; reproduce with
 `uv run python -m src.stage2.run_ablations`.
 
+**See `STAGE2_HANDOFF.md`** for the retrieval-arm ablation (`--query-arm`),
+the missing-retrieval-bank corpus sources, and the NLLB-200 stretch scaffold.
+
 **End-to-end dev ChrF++ (k=5):**
 
 | Language | Official | Generic | Cultural-VQA | Δ |
