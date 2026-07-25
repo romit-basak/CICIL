@@ -151,6 +151,13 @@ kinship). Category notes feed RQ3.
    dataset at `data/americasnlp2026/` for the images), enter your name, score all 15
    items, click **Export results CSV**, move the download into
    `analysis/human_eval/results/`, commit it.
+   **Browser notes:** use Chrome or Firefox opened directly on the file. VSCode's
+   integrated browser renders it fine but *cannot download files* — use the
+   **Show CSV** button there and copy/paste into a file instead. Safari blocks local
+   images from `file://` pages by default (Develop → Disable Local File Restrictions,
+   or just use Chrome). Scores autosave per annotator name either way — nothing is
+   lost by switching browsers *on the same machine only if you re-enter scores*;
+   localStorage does not transfer between browsers.
 3. Analysis: `uv run python -m analysis.human_eval.score_results` (needs ≥2
    annotators for κ). Progress autosaves in the browser (localStorage) per
    annotator name — closing the tab loses nothing.

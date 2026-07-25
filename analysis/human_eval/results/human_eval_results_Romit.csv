@@ -1,0 +1,16 @@
+annotator,sample_id,language,A_cultural_accuracy,B_cultural_accuracy,A_faithfulness,B_faithfulness,A_fluency,B_fluency,preference_A_B_tie,notes
+Romit,S001,Guaraní,1,0,2,2,1,2,tie,"Caption A is correct that it is likely traditional textile art, but then goes on to say ""in cultures that use fabrics and threads to create symbolic or decorative designs."", which is vague and awkward, most cultures in the world use some symbolism in textual art. Caption B is less awkward, more descriptive of what is actually showing on screen, but skips the traditional textile art framing completely."
+Romit,S002,Guaraní,0,0,2,2,2,2,tie,
+Romit,S003,Guaraní,0,0,1,1,2,1,A,"A mentions Argentine traditional attire, but not the specific culture(it's Paraguayan Guarani culture). Neither identify the �andut� in the subject's attire, which would help narrow down the actual culture. The Chamam� framing is entirely drawn from the poster's writing, not the person or any artifacts shown. Both get the date(2012) wrong, which would be completely invisible to our ChRF++ metric."
+Romit,S004,Yucatec Maya,0,0,1,2,2,2,B,
+Romit,S005,Yucatec Maya,0,0,2,2,2,2,tie,
+Romit,S006,Yucatec Maya,1,0,2,2,2,2,A,"A identifies the flag as ""Mexican"" but does not explicitly say Maya."
+Romit,S007,Wixárika,0,0,1,1,2,2,tie,"A said waterfall, B said river, it's not clear from the image what water body this is. Also, the Wixarika labels look off."
+Romit,S008,Wixárika,0,0,2,2,2,2,tie,Both labels are reading off the handwritten sign on the wall rather than guessing from the subject itself.
+Romit,S009,Wixárika,0,0,1,2,2,2,B,
+Romit,S010,Nahuatl,0,0,2,2,2,2,tie,
+Romit,S011,Nahuatl,0,0,2,2,2,2,tie,
+Romit,S012,Nahuatl,0,0,1,2,2,2,tie,
+Romit,S013,Bribri,0,0,1,2,2,2,tie,
+Romit,S014,Bribri,0,0,1,2,2,2,B,
+Romit,S015,Bribri,0,0,2,0,2,1,B,

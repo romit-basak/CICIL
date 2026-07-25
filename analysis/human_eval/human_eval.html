@@ -125,7 +125,16 @@ function render() {
     </div>
     <div class="card nav">
       <span>Autosaves locally as you go (per annotator name).</span>
-      <button class="primary" onclick="exportCSV()">Export results CSV</button>
+      <span>
+        <button onclick="showCSV()">Show CSV (copy manually)</button>
+        <button class="primary" onclick="exportCSV()">Export results CSV</button>
+      </span>
+    </div>
+    <div class="card" id="csvbox" style="display:none">
+      <h2>Results CSV — select all &amp; copy, then save as <code>results/human_eval_results_&lt;name&gt;.csv</code></h2>
+      <p>Use this if the download button does nothing (e.g. VSCode's integrated browser
+      can't download files).</p>
+      <textarea id="csvtext" style="min-height:180px" onclick="this.select()"></textarea>
     </div>`;
 }
 
@@ -136,10 +145,7 @@ function csvQuote(v) {
   return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
 }
 
-function exportCSV() {
-  const incomplete = ITEMS.filter(it => !isComplete(it.sample_id)).map(it => it.sample_id);
-  if (incomplete.length &&
-      !confirm("Not fully scored yet: " + incomplete.join(", ") + "\nExport anyway?")) return;
+function buildCSV() {
   const cols = ["annotator", "sample_id", "language",
                 ...DIMS.flatMap(d => ["A_" + d[0], "B_" + d[0]]),
                 "preference_A_B_tie", "notes"];
@@ -151,12 +157,32 @@ function exportCSV() {
                c === "sample_id" ? it.sample_id :
                c === "language" ? it.language : r[c])).join(","));
   }
-  const blob = new Blob([lines.join("\n") + "\n"], { type: "text/csv;charset=utf-8" });
+  return lines.join("\n") + "\n";
+}
+
+function confirmComplete() {
+  const incomplete = ITEMS.filter(it => !isComplete(it.sample_id)).map(it => it.sample_id);
+  return !incomplete.length ||
+         confirm("Not fully scored yet: " + incomplete.join(", ") + "\nExport anyway?");
+}
+
+function showCSV() {
+  if (!confirmComplete()) return;
+  const box = document.getElementById("csvbox");
+  box.style.display = "";
+  document.getElementById("csvtext").value = buildCSV();
+  box.scrollIntoView();
+}
+
+function exportCSV() {
+  if (!confirmComplete()) return;
+  const blob = new Blob([buildCSV()], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = `human_eval_results_${annotator.replace(/\s+/g, "_")}.csv`;
   a.click();
-  alert("Saved. Move the downloaded file into analysis/human_eval/results/ and commit it.");
+  alert("If no file downloaded (VSCode's browser can't), use 'Show CSV' and copy it " +
+        "manually. Either way the file belongs in analysis/human_eval/results/.");
 }
 </script>
 </body>
