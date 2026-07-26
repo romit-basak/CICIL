@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 
 from tqdm import tqdm
 
@@ -23,19 +24,23 @@ from .backends import get_backend
 from .data_io import load_split
 
 
-def _run_generic(backend, image_path, context: str | None = None) -> tuple[str, dict]:
+def _run_generic(backend, image_path, context: str | None = None) -> tuple[str, dict, dict]:
     prompt = vqa_prompts.with_context(vqa_prompts.GENERIC_PROMPT, context)
-    return backend.caption(image_path, prompt), {}
+    return backend.caption(image_path, prompt), {}, {}
 
 
 def _run_cultural_vqa(backend, image_path, context: str | None = None,
-                      joint: bool = False) -> tuple[str, dict]:
+                      joint: bool = False, text_bank=None) -> tuple[str, dict, dict]:
     """Ask the cultural questions, then synthesize a grounded description.
 
-    ``context`` (silver-captioning only) prepends source metadata to every
-    teacher prompt. ``joint`` asks each category's questions in one call —
-    matching the category-level distillation pairs the student trains on
-    (and cutting 7 calls/image to 5).
+    ``context`` prepends retrieved/source metadata to every prompt (CBIR image
+    neighbors at deployment, encyclopedic source text during silver-captioning).
+    ``joint`` asks each category's questions in one call — matching the
+    category-level distillation pairs the student trains on (and cutting 7
+    calls/image to 5). ``text_bank`` (a rag_context.TextBank) switches the
+    synthesis step to the RAG prompt: the VQA answers themselves query the
+    culture's Wikipedia bank, and retrieved snippets are supplied with
+    calibrated-hedging instructions ("posiblemente X" for uncertain matches).
     """
     annotations: dict[str, str] = {}
     for category, questions in vqa_prompts.CULTURAL_QUESTIONS.items():
@@ -46,11 +51,20 @@ def _run_cultural_vqa(backend, image_path, context: str | None = None,
         answers = [backend.caption(image_path, vqa_prompts.with_context(p, context))
                    for p in prompts]
         annotations[category] = " ".join(a for a in answers if a)
+
+    extras: dict = {}
+    if text_bank is not None:
+        query = " ".join(v for v in annotations.values() if v)
+        hits = text_bank.retrieve(query) if query else []
+        snippets = [f"{h['title']}: {h['extract'][:200]}" for h in hits]
+        extras["text_rag_snippets"] = snippets
+        synthesis = vqa_prompts.format_synthesis_rag(annotations, snippets)
+    else:
+        synthesis = vqa_prompts.format_synthesis(annotations)
     description = backend.caption(
-        image_path,
-        vqa_prompts.with_context(vqa_prompts.format_synthesis(annotations), context),
+        image_path, vqa_prompts.with_context(synthesis, context),
     )
-    return description, annotations
+    return description, annotations, extras
 
 
 def main() -> None:
@@ -59,10 +73,11 @@ def main() -> None:
     ap.add_argument("--split", default="dev", choices=["pilot", "dev", "test"])
     ap.add_argument("--mode", default="generic", choices=["generic", "cultural-vqa"])
     ap.add_argument("--backend", default="ollama",
-                    choices=["ollama", "hf", "smolvlm", "smolvlm-noctx"],
-                    help="Model backend. 'smolvlm-noctx' runs the same SmolVLM code path "
-                         "but tags the output filename honestly for the no-context "
-                         "adapter (pair with --adapter outputs/adapters/distill_noctx) — "
+                    choices=["ollama", "hf", "smolvlm", "smolvlm-noctx",
+                             "smolvlm-rag", "ollama-rag"],
+                    help="Model backend. Suffixed variants ('smolvlm-noctx', "
+                         "'smolvlm-rag', 'ollama-rag') run the same base code path "
+                         "but tag the output filename honestly for the run variant — "
                          "no more post-hoc renames.")
     ap.add_argument("--model", default=None, help="Override model id/tag for the backend.")
     ap.add_argument("--adapter", default=None,
@@ -80,6 +95,14 @@ def main() -> None:
                          "the output filename is derived from (lang, split, mode, "
                          "backend), and reusing a backend tag for a different run has "
                          "already silently destroyed a finished file once.")
+    ap.add_argument("--context-json", type=Path, default=None,
+                    help="JSON file mapping example id -> context string (e.g. CBIR "
+                         "image-neighbor context from src.stage1.rag_context --lookup). "
+                         "Injected into every prompt via vqa_prompts.with_context.")
+    ap.add_argument("--text-rag", action="store_true",
+                    help="cultural-vqa only: query the culture's Wikipedia text bank "
+                         "with the VQA answers and synthesize with the RAG prompt "
+                         "(calibrated hedging). Needs indices/wikitext_<lang>.index.")
     args = ap.parse_args()
 
     config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -94,17 +117,39 @@ def main() -> None:
     if args.limit is not None:
         examples = examples[: args.limit]
 
-    # All smolvlm-* tags share the SmolVLM code path; the tag only differentiates
-    # the output filename (which adapter produced it).
-    backend_key = "smolvlm" if args.backend.startswith("smolvlm") else args.backend
+    # Suffixed tags (smolvlm-noctx/-rag, ollama-rag) share their base code path;
+    # the tag only differentiates the output filename (which run variant made it).
+    if args.backend.startswith("smolvlm"):
+        backend_key = "smolvlm"
+    elif args.backend.startswith("ollama"):
+        backend_key = "ollama"
+    else:
+        backend_key = args.backend
     backend = get_backend(backend_key, args.model,
                           temperature=args.temperature, seed=args.seed,
                           adapter=args.adapter)
+
+    ctx: dict[str, str] = {}
+    if args.context_json:
+        ctx = json.loads(args.context_json.read_text(encoding="utf-8"))
+        print(f"Loaded CBIR context for {len(ctx)} images from {args.context_json}")
+
+    text_bank = None
+    if args.text_rag:
+        if args.mode != "cultural-vqa":
+            raise SystemExit("--text-rag only applies to --mode cultural-vqa.")
+        from .rag_context import TextBank
+        text_bank = TextBank(args.lang)
+        print(f"Loaded Wikipedia text bank for {args.lang} "
+              f"({text_bank.index.ntotal} extracts)")
+
     if args.mode == "generic":
-        runner = _run_generic
+        def runner(b, p, c=None):
+            return _run_generic(b, p, context=c)
     else:
-        def runner(b, p):  # noqa: E731 - closes over the joint flag
-            return _run_cultural_vqa(b, p, joint=args.joint_questions)
+        def runner(b, p, c=None):  # noqa: E731 - closes over joint/text_bank
+            return _run_cultural_vqa(b, p, context=c, joint=args.joint_questions,
+                                     text_bank=text_bank)
 
     n_written = 0
     with out_path.open("w", encoding="utf-8") as f:
@@ -113,11 +158,12 @@ def main() -> None:
                 tqdm.write(f"[skip] missing image for {ex.id}: {ex.image_path}")
                 continue
             try:
-                description, annotations = runner(backend, ex.image_path)
+                description, annotations, extras = runner(
+                    backend, ex.image_path, ctx.get(ex.id))
             except Exception as e:  # noqa: BLE001 - one bad image must not abort the run
                 tqdm.write(f"[error] {ex.id} ({ex.image_path.name}): {e}")
-                description, annotations = "", {}
-            f.write(json.dumps({
+                description, annotations, extras = "", {}, {}
+            record = {
                 "id": ex.id,
                 "filename": ex.image_path.name,
                 "language": ex.language,
@@ -126,7 +172,12 @@ def main() -> None:
                 "backend": args.backend,
                 "generated_spanish": description,
                 "cultural_annotations": annotations,
-            }, ensure_ascii=False) + "\n")
+            }
+            if ctx:
+                record["cbir_context"] = ctx.get(ex.id, "")
+            if extras.get("text_rag_snippets") is not None:
+                record["text_rag_snippets"] = extras["text_rag_snippets"]
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
             f.flush()  # keep the file inspectable mid-run and crash-resilient
             n_written += 1
 

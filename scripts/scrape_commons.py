@@ -188,7 +188,7 @@ def load_provenance(csv_path: Path) -> list[dict]:
 def scrape_culture(api: Commons, culture: str, cap: int, depth: int,
                    out_root: Path, cicil: DedupIndex,
                    provenance: list[dict], writer: csv.DictWriter,
-                   prov_file) -> int:
+                   prov_file, extra_seeds: list[str] | None = None) -> int:
     img_dir = out_root / culture / "images"
     img_dir.mkdir(parents=True, exist_ok=True)
 
@@ -210,8 +210,12 @@ def scrape_culture(api: Commons, culture: str, cap: int, depth: int,
         print(f"[{culture}] already have {accepted}/{cap} — skipping")
         return accepted
 
-    print(f"[{culture}] walking categories (depth {depth}) ...")
-    titles = [t for t in walk_file_titles(api, SEED_CATEGORIES[culture], depth)
+    # Extra seeds walk FIRST: the accept cap fills in walk order, so appended
+    # seeds can starve entirely behind the original categories' backlog (a
+    # 150-slot top-up landed zero Ñandutí files when it was appended).
+    seeds = list(dict.fromkeys(list(extra_seeds or []) + SEED_CATEGORIES[culture]))
+    print(f"[{culture}] walking categories (depth {depth}, {len(seeds)} seeds) ...")
+    titles = [t for t in walk_file_titles(api, seeds, depth)
               if t not in done_titles and not _TITLE_BLOCK.search(t)]
     print(f"[{culture}] {len(titles)} candidate files; need {cap - accepted} more")
 
@@ -298,7 +302,17 @@ def main() -> None:
     ap.add_argument("--depth", type=int, default=2, help="subcategory BFS depth")
     ap.add_argument("--out", type=Path,
                     default=config.ROOT / "data" / "external" / "commons")
+    ap.add_argument("--extra-seeds", type=Path, default=None,
+                    help="File of additional Commons category names (one per line), "
+                         "e.g. from scripts/harvest_wikipedia.py. Applied to every "
+                         "culture in --cultures, so pair with a single culture.")
     args = ap.parse_args()
+
+    extra_seeds: list[str] = []
+    if args.extra_seeds:
+        extra_seeds = [l.strip() for l in args.extra_seeds.read_text(
+            encoding="utf-8").splitlines() if l.strip()]
+        print(f"Loaded {len(extra_seeds)} extra seed categories from {args.extra_seeds}")
 
     args.out.mkdir(parents=True, exist_ok=True)
     csv_path = args.out / "provenance.csv"
@@ -316,7 +330,7 @@ def main() -> None:
         for culture in args.cultures:
             totals[culture] = scrape_culture(
                 api, culture, args.per_culture, args.depth, args.out,
-                cicil, provenance, writer, f)
+                cicil, provenance, writer, f, extra_seeds=extra_seeds)
 
     print("\n=== scrape summary ===")
     for culture, n in totals.items():

@@ -134,6 +134,63 @@ Preference: ties 9/15 (60%), cultural 4 (27%), generic 2 (13%).
 - Annotator 2: TBD — κ needs a second pass (any teammate; English pivot means no
   Spanish required; ~30–45 min).
 
+## RAG pilot (2026-07-26) — retrieval closes the naming gap the weights can't
+
+This is the direct follow-up to the "obvious future work" line above, run as a
+2-language pilot (Guaraní + Wixárika). Arc sentence for the paper: **a 2B model
+cannot store the encyclopedia in its weights (distillation showed that), and even
+a 7B teacher names a culture in ≤10% of outputs unaided — so we supply the
+encyclopedia at inference time via retrieval, with hedging by design.** Two
+channels, both harvested systematically from Wikipedia (no hand-picked
+categories): SigLIP CBIR over ~500 Commons images/culture (context for every VQA
+question) and MiniLM retrieval over Wikipedia lead extracts queried with the
+image's own VQA answers (context for synthesis only, with "posiblemente" hedging
+instructions).
+
+| lang | arm | ChrF++ | culture-term | hedged | degen |
+|---|---|---|---|---|---|
+| guarani | smolvlm no-RAG | 19.35 | 7/50 (14%) | 13/50 | 0/50 |
+| guarani | smolvlm-rag | 19.10 | **40/50 (80%)** | 5/50 | 0/50 |
+| guarani | ollama-rag (7B teacher) | 20.26 | 20/50 | 27/50 | 0/50 |
+| wixarika | smolvlm no-RAG | 13.18 | 2/50 (4%) | 3/50 | 15/50 |
+| wixarika | smolvlm-rag | 12.85 | **20/50 (40%)** | 0/50 | 9/50 |
+| wixarika | ollama-rag (7B teacher) | 14.06 | 17/50 | 23/50 | 10/50 |
+
+Bare 7B teacher without RAG: 5/50 and 1/50 culture-terms — **retrieval, not model
+scale, is the binding constraint on cultural naming.**
+
+**Case-study updates (same images as above):**
+- **hch_021 (bare hills)**: previously "sin evidencia de elementos culturales
+  específicos" in every arm. Student-RAG: *"paisaje natural en Wirikuta, San Luis
+  Potosí"* (CBIR image channel found it — all top-3 neighbors were Wirikuta).
+  Teacher-RAG hedges properly: *"posiblemente relacionado con la cultura wixárika,
+  que considera Wirikuta como uno de los cinco lugares más sagrados."* The
+  sacred-geography category — the hardest, most novel case — works through
+  retrieval.
+- **grn_025 (chamamé festival)**: teacher-RAG gets festival, country, and garment
+  right (*"chamamé en Argentina con... typói"*). Student-RAG shows the failure
+  mode: *"mujer paraguaya... Carrozas del Ñandutí"* — the Paraguay-centric Guaraní
+  bank pulled the attribution to the wrong country, asserted without hedging.
+- **grn_019 (ñandutí)**: still missed by name in all arms; student-RAG fabricates
+  (*"piel de jaguar... La Recova, Brasil"* — a retrieval-induced error, worse than
+  the baseline's vague honesty). RAG's cost side, use alongside the win.
+
+**The hedging-capability finding (new, paper-worthy):** the calibration
+instruction ("mark uncertain matches with posiblemente") is followed by the 7B
+teacher (hedge rate 27/50, 23/50) and *inverted* by the 2B student, which hedges
+less than its own no-RAG baseline (13→5, 3→0) — it converts retrieved concepts
+into confident assertions. Calibrated uncertainty under retrieval appears to be a
+capability, not a prompting fix. This reframes the earlier hedging observation:
+the baseline student hedged because it lacked knowledge; given knowledge, it
+over-commits.
+
+**Confounds to state**: the RAG synthesis prompt necessarily permits uncertainty
+expressions that the no-RAG v2 prompt bans (prompt and context change together);
+ChrF++ is flat across arms — single-reference blindness to correct naming, which
+is exactly why culture-term rate + audit are co-primary here; 2-language pilot
+only; Wixárika degeneration improvement (15→9/50) is not attributable to RAG
+alone.
+
 ## Draft limitations paragraphs (adapt freely)
 
 > Our human evaluation of cultural accuracy is bounded by annotator expertise:

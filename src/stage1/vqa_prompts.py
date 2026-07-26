@@ -66,6 +66,33 @@ def format_synthesis(annotations: dict[str, str]) -> str:
     return SYNTHESIS_PROMPT.format(observations="\n".join(lines))
 
 
+# RAG variant (2026-07-26 pilot): same one-sentence contract, but retrieved
+# encyclopedia snippets are supplied and — unlike the base prompt — calibrated
+# hedging is PERMITTED, narrowly, for retrieved concept names ("posiblemente
+# ñandutí"). The base prompt's blanket hedging ban stays for everything else.
+# This is a deliberate prompt+context confound in the RAG arm; state it in any
+# writeup (see paper_notes.md).
+SYNTHESIS_PROMPT_RAG = (
+    "A partir de las observaciones y los fragmentos de enciclopedia siguientes, "
+    "escribe UNA sola oración en español (máximo 35 palabras) que describa la "
+    "imagen nombrando los elementos culturales concretos (objetos, prácticas, "
+    "lugar). Si una observación coincide con un concepto cultural descrito en "
+    "los fragmentos, nómbralo explícitamente; si la coincidencia no es segura, "
+    "márcala con «posiblemente». NUNCA nombres un concepto sin apoyo visual en "
+    "las observaciones. No uses frases de relleno como «la imagen muestra».\n\n"
+    "Fragmentos de enciclopedia sobre esta cultura (pueden no ser relevantes):\n"
+    "{snippets}\n\nObservaciones:\n{observations}\n\nDescripción (una oración):"
+)
+
+
+def format_synthesis_rag(annotations: dict[str, str], snippets: list[str]) -> str:
+    """RAG synthesis prompt: observations + retrieved encyclopedia snippets."""
+    obs = [f"- {cat}: {ans}" for cat, ans in annotations.items() if ans]
+    snips = [f"- {s}" for s in snippets]
+    return SYNTHESIS_PROMPT_RAG.format(observations="\n".join(obs),
+                                       snippets="\n".join(snips) or "- (ninguno)")
+
+
 # Distillation: when silver-captioning scraped images, the *teacher* may be given
 # the source's encyclopedic description as context — it names ceremonies, objects
 # and places the image alone might not reveal. The student never sees this prefix

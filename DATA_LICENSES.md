@@ -73,6 +73,23 @@ Zenodo record if used for any AmericasNLP-related task (done above).
   corpus data itself — same "cite it, no stated license" situation as the AmericasNLP
   files above.
 
+## Stage 1 RAG sources (pilot, added 2026-07-26)
+
+- **Wikipedia lead extracts** (`data/external/wikipedia/*_text.jsonl`) — text from
+  es/en Wikipedia, harvested by `scripts/harvest_wikipedia.py` via the public
+  MediaWiki/REST APIs. License: **CC BY-SA 4.0** (Wikipedia's standard text
+  license). Each row records `title`, `url`, and `lang` — that per-article URL is
+  the attribution. Retrieved snippets are injected into Stage 1 prompts and quoted
+  (truncated) in output JSONLs (`text_rag_snippets`); if any snippet text is
+  reproduced verbatim in the paper, cite the article. Share-alike applies to
+  derivative *text*, not to model outputs conditioned on it.
+- **Wikimedia Commons images** (`data/external/commons/`) — scraped by
+  `scripts/scrape_commons.py`, which filters to free licenses at scrape time
+  (public domain / CC0 / CC BY / CC BY-SA) and records per-file license, author,
+  and source URL in `provenance.csv`. Images are used only as a local CBIR index
+  (embeddings + titles/descriptions as retrieval context); none are redistributed
+  in the repo (the directory is gitignored, like `indices/`).
+
 ## Provenance note
 
 `byuild_corpora.py` (repo root) is the conversion script that produced these files.

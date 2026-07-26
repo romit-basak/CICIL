@@ -3,6 +3,64 @@
 Stage 1 produces the Spanish intermediate descriptions; Stage 2 translates them to
 the target language and scores them. This note is the interface between the two.
 
+## 🔎 2026-07-26 — RAG pilot: Wikipedia retrieval into Stage 1 (Guaraní + Wixárika)
+
+**What it is.** Stage 1's root problem (established by the human eval + the 7%
+culture-term statistic) is that no cultural knowledge source exists at inference —
+the 2B student can't memorize the encyclopedia, and even the 7B teacher names a
+culture in only 5/50 (Guaraní) / 1/50 (Wixárika) outputs. This pilot bolts a
+retrieval bank onto Stage 1: an **image channel** (SigLIP CBIR over ~500
+license-filtered Commons images per culture, harvested systematically from
+Wikipedia hub articles — `scripts/harvest_wikipedia.py` + `scrape_commons.py
+--extra-seeds`) injected as context into every VQA question, and a **text channel**
+(MiniLM retrieval over Wikipedia lead extracts, queried with the image's own VQA
+answers) injected into the synthesis step with calibrated-hedging instructions
+("posiblemente" for uncertain matches; never name a concept without visual
+support). Module: `src/stage1/rag_context.py`; new backend tags `smolvlm-rag` /
+`ollama-rag`; per-image retrievals recorded in the output JSONL
+(`cbir_context`, `text_rag_snippets`) for auditability.
+
+**Results (dev, cultural-vqa, k=5, temp-0.7 Stage 2 decoding everywhere):**
+
+| lang | arm | ChrF++ | culture-term | hedged | degen |
+|---|---|---|---|---|---|
+| guarani | smolvlm (no RAG, re-run) | 19.35 | 7/50 | 13/50 | 0/50 |
+| guarani | **smolvlm-rag** | 19.10 | **40/50** | 5/50 | 0/50 |
+| guarani | ollama-rag (teacher) | 20.26 | 20/50 | 27/50 | 0/50 |
+| wixarika | smolvlm (no RAG, re-run) | 13.18 | 2/50 | 3/50 | 15/50 |
+| wixarika | **smolvlm-rag** | 12.85 | **20/50** | 0/50 | 9/50 |
+| wixarika | ollama-rag (teacher) | 14.06 | 17/50 | 23/50 | 10/50 |
+
+(Reference: bare teacher without RAG names a culture in 5/50 / 1/50 — so retrieval,
+not model scale, is the binding constraint on cultural naming.)
+
+**Reading:**
+- **Culture-term rate is the headline**: 14%→80% (Guaraní) and 4%→40% (Wixárika)
+  for the same 2B student. ChrF++ stays flat — the established metric blindness:
+  a single reference can't reward correct naming it doesn't contain.
+- **Audit wins**: hch_021 (bare hills, scored "no cultural content" by every prior
+  arm) now reads *"paisaje natural en Wirikuta, San Luis Potosí"* (student) /
+  *"posiblemente relacionado con la cultura wixárika, que considera Wirikuta uno de
+  los cinco lugares más sagrados"* (teacher). grn_025 (teacher): *"celebración
+  cultural del chamamé en Argentina con... typói"* — correct festival, country, and
+  garment.
+- **The hedging-capability gap**: the teacher follows the calibration instruction
+  (hedges 27/50, 23/50); the 2B student hedges *less* than its own baseline (5/50,
+  0/50) — it converts retrieved concepts into confident assertions, sometimes
+  wrong (grn_025 student: "mujer paraguaya... Carrozas del Ñandutí" — right
+  artifact family, wrong country; grn_019: "piel de jaguar... La Recova, Brasil" —
+  retrieval-induced fabrication). Calibrated uncertainty appears to be a
+  capability, not a prompt.
+- **Scope/confounds (state in the paper)**: 2-language pilot; the RAG synthesis
+  prompt differs from the no-RAG v2 prompt (it must permit hedging), so prompt and
+  context change together in the RAG arms; Wixárika degeneration improves
+  (15→9/50) but the arms differ upstream, so don't attribute that to RAG alone.
+
+Nothing here changes Mehek's sweep — the RAG tags are extra backends, and the
+five-language sweep below remains the paper's main table.
+
+---
+
 ## 🚀 2026-07-25 — Banks landed: run the sweep now (nothing left to build)
 
 **Framing up front: your part has no construction work left.** The Phase2.zip merge
