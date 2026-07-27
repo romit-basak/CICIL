@@ -49,8 +49,10 @@ TEXT_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"  # = Stage 2's ENCODER_MODE
 
 CBIR_K = 3
 CBIR_MIN_SCORE = 0.55   # CLIP cosine; tune from --lookup's printed distribution
+CBIR_STRONG_SCORE = 0.80  # «coincidencia fuerte» band: rare by design (~5% of
+                          # dev neighbors: 7/150 grn, 3/150 hch on 2026-07-26)
 TEXT_K = 3
-CONTEXT_CHAR_CAP = 500
+CONTEXT_CHAR_CAP = 600  # was 500; band tags add ~25 chars/neighbor
 
 
 # ---------------------------------------------------------------- shared bits
@@ -224,7 +226,9 @@ def build_image_context(neighbors: list[dict], min_score: float = CBIR_MIN_SCORE
     parts = []
     for i, n in enumerate(hits, 1):
         desc = n["description"].strip()
-        parts.append(f"{i}) {n['title']}" + (f": {desc}" if desc else ""))
+        band = ("coincidencia fuerte" if n["score"] >= CBIR_STRONG_SCORE
+                else "coincidencia posible")
+        parts.append(f"{i}) [{band}] {n['title']}" + (f": {desc}" if desc else ""))
     ctx = "Imágenes similares de esta cultura en Wikimedia Commons: " + " ".join(parts)
     return ctx[:CONTEXT_CHAR_CAP]
 
@@ -252,6 +256,52 @@ def cmd_lookup(lang: str, split: str, k: int, min_score: float,
           f"(min_score={min_score}); neighbor score distribution: "
           f"min={s.min():.2f} p25={np.percentile(s,25):.2f} "
           f"median={np.median(s):.2f} p75={np.percentile(s,75):.2f} max={s.max():.2f}")
+    print(f"Wrote {path}")
+
+
+def cmd_lookup_commons(culture: str, k: int, min_score: float) -> None:
+    """CBIR context for each bank image itself — RAG-aware silver captioning.
+
+    The bank vectors already live in the FAISS index, so this searches the index
+    against its own reconstructed vectors (no image re-encoding, no torch model).
+    Self-matches are excluded: same local_file, or near-duplicates at >= 0.995
+    (copying a bank image's own Commons caption back to it would be circular).
+    Output keyed by local_file, silver_caption's per-row handle.
+    """
+    import numpy as np
+    import torch
+    torch.ones(4).sum()  # init torch's OpenMP before faiss's loads (macOS dual-OMP)
+    import faiss
+
+    index = faiss.read_index(str(INDEX_DIR / f"cbir_{culture}.index"))
+    meta = [json.loads(l) for l in
+            (INDEX_DIR / f"cbir_{culture}_meta.jsonl").open(encoding="utf-8")]
+    vecs = index.reconstruct_n(0, index.ntotal)
+    # Self-similarity in numpy, not faiss.search: faiss's OMP parallel region
+    # aborts under the torch/faiss dual-runtime on macOS, and an n~500 matmul
+    # doesn't need faiss anyway.
+    sims = vecs @ vecs.T
+    idxs = np.argsort(-sims, axis=1)[:, : k + 3]  # +3: self + possible near-dupes
+    scores = np.take_along_axis(sims, idxs, axis=1)
+    out, n_strong = {}, 0
+    for row_i, m in enumerate(meta):
+        neigh = []
+        for s, i in zip(scores[row_i], idxs[row_i]):
+            if i < 0 or i == row_i:
+                continue
+            n = meta[i]
+            if n["local_file"] == m["local_file"] or s >= 0.995:
+                continue
+            neigh.append({**n, "score": float(s)})
+        neigh = neigh[:k]
+        ctx = build_image_context(neigh, min_score)
+        if ctx:
+            out[m["local_file"]] = ctx
+            n_strong += "coincidencia fuerte" in ctx
+    path = config.OUTPUT_DIR / f"cbir_context_commons_{culture}.json"
+    path.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"[{culture}] {len(out)}/{len(meta)} bank images got context "
+          f"({n_strong} with a strong-band neighbor)")
     print(f"Wrote {path}")
 
 
@@ -301,6 +351,9 @@ def main() -> None:
     g.add_argument("--build-images", action="store_true")
     g.add_argument("--build-text", action="store_true")
     g.add_argument("--lookup", action="store_true")
+    g.add_argument("--lookup-commons", action="store_true",
+                   help="CBIR context for the bank images themselves (self-matches "
+                        "excluded) — feeds RAG-aware silver captioning.")
     g.add_argument("--audit", action="store_true")
     ap.add_argument("--cultures", nargs="+", default=["guarani", "wixarika"],
                     choices=config.LANGUAGES)
@@ -321,6 +374,9 @@ def main() -> None:
         if not args.lang:
             raise SystemExit("--lookup needs --lang")
         cmd_lookup(args.lang, args.split, args.k, args.min_score, device=args.device)
+    elif args.lookup_commons:
+        for culture in args.cultures:
+            cmd_lookup_commons(culture, args.k, args.min_score)
     else:
         if not args.lang:
             raise SystemExit("--audit needs --lang")

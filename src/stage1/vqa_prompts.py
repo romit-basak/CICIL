@@ -66,31 +66,52 @@ def format_synthesis(annotations: dict[str, str]) -> str:
     return SYNTHESIS_PROMPT.format(observations="\n".join(lines))
 
 
-# RAG variant (2026-07-26 pilot): same one-sentence contract, but retrieved
-# encyclopedia snippets are supplied and — unlike the base prompt — calibrated
-# hedging is PERMITTED, narrowly, for retrieved concept names ("posiblemente
-# ñandutí"). The base prompt's blanket hedging ban stays for everything else.
-# This is a deliberate prompt+context confound in the RAG arm; state it in any
-# writeup (see paper_notes.md).
+# Spanish culture names for the RAG synthesis prompt ("la cultura {X}" —
+# feminine agreement where the adjective inflects). Keys are the language codes,
+# which double as culture keys across the whole pipeline.
+CULTURE_NAMES_ES = {
+    "guarani": "guaraní",
+    "wixarika": "wixárika (huichol)",
+    "maya": "maya yucateca",
+    "bribri": "bribri",
+    "nahuatl": "náhuatl",
+}
+
+# RAG variant, v2 (2026-07-26 calibration): the culture is asserted as GIVEN —
+# the retrieval bank was selected using the task's culture label, so the culture
+# itself is never the uncertain part; only concept identification is. Confidence
+# is channel- and score-differentiated: CBIR neighbors arrive in the context
+# prefix tagged «coincidencia fuerte» (cosine >= CBIR_STRONG_SCORE) or
+# «coincidencia posible» (see rag_context.build_image_context); text-only
+# support ranks below both. The base prompt's blanket hedging ban stays for
+# everything else. Prompt and context still change together vs. the no-RAG arm —
+# state the confound in any writeup (see paper_notes.md).
 SYNTHESIS_PROMPT_RAG = (
-    "A partir de las observaciones y los fragmentos de enciclopedia siguientes, "
+    "La imagen proviene de la cultura {culture}: trátalo como un hecho, no como "
+    "una suposición. A partir de las observaciones y del material recuperado, "
     "escribe UNA sola oración en español (máximo 35 palabras) que describa la "
     "imagen nombrando los elementos culturales concretos (objetos, prácticas, "
-    "lugar). Si una observación coincide con un concepto cultural descrito en "
-    "los fragmentos, nómbralo explícitamente; si la coincidencia no es segura, "
-    "márcala con «posiblemente». NUNCA nombres un concepto sin apoyo visual en "
-    "las observaciones. No uses frases de relleno como «la imagen muestra».\n\n"
-    "Fragmentos de enciclopedia sobre esta cultura (pueden no ser relevantes):\n"
-    "{snippets}\n\nObservaciones:\n{observations}\n\nDescripción (una oración):"
+    "lugar). Niveles de confianza: un concepto respaldado por una imagen similar "
+    "marcada «coincidencia fuerte» afírmalo directamente; si la marca es "
+    "«coincidencia posible», precede el concepto con «posiblemente»; un concepto "
+    "que solo aparece en los fragmentos de texto (sin imagen similar) preséntalo "
+    "con «podría ser». NUNCA nombres un concepto sin apoyo en las observaciones "
+    "visuales. No uses frases de relleno como «la imagen muestra».\n\n"
+    "Fragmentos de enciclopedia sobre la cultura {culture} (pueden no ser "
+    "relevantes):\n{snippets}\n\nObservaciones:\n{observations}\n\n"
+    "Descripción (una oración):"
 )
 
 
-def format_synthesis_rag(annotations: dict[str, str], snippets: list[str]) -> str:
-    """RAG synthesis prompt: observations + retrieved encyclopedia snippets."""
+def format_synthesis_rag(annotations: dict[str, str], snippets: list[str],
+                         culture: str) -> str:
+    """RAG synthesis prompt: observations + retrieved snippets, culture given."""
     obs = [f"- {cat}: {ans}" for cat, ans in annotations.items() if ans]
     snips = [f"- {s}" for s in snippets]
-    return SYNTHESIS_PROMPT_RAG.format(observations="\n".join(obs),
-                                       snippets="\n".join(snips) or "- (ninguno)")
+    return SYNTHESIS_PROMPT_RAG.format(
+        culture=CULTURE_NAMES_ES.get(culture, culture),
+        observations="\n".join(obs),
+        snippets="\n".join(snips) or "- (ninguno)")
 
 
 # Distillation: when silver-captioning scraped images, the *teacher* may be given

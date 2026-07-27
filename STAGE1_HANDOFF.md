@@ -3,6 +3,67 @@
 Stage 1 produces the Spanish intermediate descriptions; Stage 2 translates them to
 the target language and scores them. This note is the interface between the two.
 
+## ✅ 2026-07-27 — RAG extension to ALL 5 languages + RAG-aware distillation (FINAL)
+
+The pilot below, extended to all 5 languages with three calibration upgrades:
+(1) the culture is asserted as GIVEN in the RAG synthesis prompt (bank selection
+already used the task's culture label — only the concept match is uncertain);
+(2) CBIR neighbors carry confidence bands («coincidencia fuerte» ≥0.80 cosine /
+«coincidencia posible»); (3) text-only support ranks below image support.
+Banks: guarani 520 / wixarika 450 / nahuatl 450 / maya 450 / bribri 221 Commons
+images; 543/150/150/488/90 Wikipedia extracts. Plus **RAG-aware distillation**:
+`outputs/adapters/distill_rag`, trained (L4, 2 epochs, 13,765 triples whose
+prompts byte-match deployment INCLUDING the retrieval context) on RAG-conditioned
+teacher outputs. Full table: `uv run python -m analysis.rag_pilot`. Metrics are
+split into culture-NAME rate (partly prompt echo under culture-as-given) and
+CONCEPT rate (specific artifacts/sites — the honest signal). Dev, n=50/lang,
+k=5, temp-0.7:
+
+| lang | arm | ChrF++ | cult-name | concept | hedged | degen |
+|---|---|---|---|---|---|---|
+| guarani | smolvlm | 19.35 | 3 | 1 | 13 | 0 |
+| guarani | smolvlm-rag | 19.44 | 37 | 5 | 6 | 0 |
+| guarani | smolvlm-ragdistill | 19.31 | 30 | 2 | **27** | 0 |
+| guarani | vllm-rag (7B) | **21.04** | 37 | 3 | 29 | 0 |
+| wixarika | smolvlm | 13.18 | 0 | 0 | 3 | 15 |
+| wixarika | smolvlm-rag | 13.34 | 21 | **24** | 0 | 6 |
+| wixarika | smolvlm-ragdistill | 13.17 | 39 | 1 | **29** | 16 |
+| wixarika | vllm-rag (7B) | **15.03** | 38 | 8 | 26 | 12 |
+| maya | smolvlm | 19.48 | 1 | 0 | 7 | 0 |
+| maya | smolvlm-rag | 18.52 | 32 | 0 | 7 | 0 |
+| maya | smolvlm-ragdistill | 18.50 | 39 | 0 | **28** | 1 |
+| maya | vllm-rag (7B) | 17.65 | 38 | 0 | 28 | 0 |
+| nahuatl | smolvlm | 15.89 | 1 | 0 | 10 | 0 |
+| nahuatl | smolvlm-rag | 15.34 | 18 | 1 | 15 | 0 |
+| nahuatl | smolvlm-ragdistill | 15.05 | 26 | 0 | **34** | 0 |
+| nahuatl | vllm-rag (7B) | 14.92 | 29 | 0 | 38 | 0 |
+| bribri | smolvlm | 6.81 | 0 | 5 | 8 | 13 |
+| bribri | smolvlm-rag | **8.00** | 34 | **25** | 5 | 7 |
+| bribri | smolvlm-ragdistill | 7.31 | 31 | 5 | **23** | 14 |
+| bribri | vllm-rag (7B) | 7.07 | 37 | 6 | 24 | 10 |
+
+**Readings:**
+1. **Culture-naming: fixed everywhere** (≤3/50 → 18–39/50, all arms, all langs).
+2. **Concept grounding follows the dev set, not the bank**: big where images show
+   distinctive sites/artifacts (wixárika 24, bribri 25 — Wirikuta, cacao/Cahuita),
+   zero on maya across ALL arms incl. the 7B teacher (daily-life imagery; RQ3).
+3. **ChrF++: teacher-RAG wins grn/hch (+1.7/+1.9); bribri student-RAG +1.2** (the
+   thin-bank language gains most!); maya/nahuatl RAG slightly negative — exactly
+   the two languages where concepts never grounded (retrieval noise without
+   retrieval payoff). Coherent RQ2/RQ3 story.
+4. **Calibration IS distillable — but it transfers WITH the teacher's
+   conservatism.** ragdistill hedges teacher-like (23–34/50 vs prompt-only
+   student's 0–15) — training succeeds where prompting failed — but its concept
+   rate collapses to teacher-like levels too (wixárika 24→1, bribri 25→5): it
+   hedges the culture and drops the site name (hch_021: "posiblemente... cultura
+   wixárika" but no "Wirikuta"). Prompt-only RAG student = specific but
+   uncalibrated; distilled = calibrated but conservative; only the 7B teacher
+   holds both. This precision/recall trade on cultural specificity is a headline
+   finding for the paper.
+
+**For your sweep: nothing changes.** New backend tags are additive
+(`run_sweep --backend smolvlm-rag` etc. after a pull, per the locked plan).
+
 ## 🔎 2026-07-26 — RAG pilot: Wikipedia retrieval into Stage 1 (Guaraní + Wixárika)
 
 **What it is.** Stage 1's root problem (established by the human eval + the 7%

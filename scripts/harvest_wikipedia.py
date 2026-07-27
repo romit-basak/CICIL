@@ -111,10 +111,18 @@ CENTROID_TERMS = [
 ]
 
 
-def api_get(url: str, params: dict) -> dict:
-    r = requests.get(url, params=params, headers=UA, timeout=30)
-    r.raise_for_status()
-    return r.json()
+def api_get(url: str, params: dict, max_retries: int = 5) -> dict:
+    # Wikipedia rate-limits bursts with 429s (killed the 3-culture harvest run);
+    # honor Retry-After like scrape_commons does.
+    for attempt in range(max_retries):
+        r = requests.get(url, params=params, headers=UA, timeout=30)
+        if r.status_code == 429 and attempt < max_retries - 1:
+            wait = int(r.headers.get("Retry-After", 0)) or 10 * (attempt + 1)
+            time.sleep(wait)
+            continue
+        r.raise_for_status()
+        return r.json()
+    raise RuntimeError("unreachable")
 
 
 def get_links(wiki: str, title: str) -> list[str]:

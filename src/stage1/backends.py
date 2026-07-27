@@ -211,9 +211,11 @@ class VLLMBackend:
 
 def get_backend(name: str, model: str | None = None,
                 temperature: float = 0.2, seed: int | None = None,
-                adapter: str | None = None, base_url: str | None = None):
+                adapter: str | None = None, base_url: str | None = None,
+                num_predict: int | None = None):
     if name == "ollama":
-        return OllamaBackend(model or config.OLLAMA_VLM, temperature=temperature, seed=seed)
+        return OllamaBackend(model or config.OLLAMA_VLM, temperature=temperature,
+                             seed=seed, num_predict=num_predict)
     if name == "vllm":
         kwargs = {"temperature": temperature, "seed": seed}
         if model:

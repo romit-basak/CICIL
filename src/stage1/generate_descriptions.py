@@ -30,7 +30,8 @@ def _run_generic(backend, image_path, context: str | None = None) -> tuple[str, 
 
 
 def _run_cultural_vqa(backend, image_path, context: str | None = None,
-                      joint: bool = False, text_bank=None) -> tuple[str, dict, dict]:
+                      joint: bool = False, text_bank=None,
+                      culture: str | None = None) -> tuple[str, dict, dict]:
     """Ask the cultural questions, then synthesize a grounded description.
 
     ``context`` prepends retrieved/source metadata to every prompt (CBIR image
@@ -58,7 +59,8 @@ def _run_cultural_vqa(backend, image_path, context: str | None = None,
         hits = text_bank.retrieve(query) if query else []
         snippets = [f"{h['title']}: {h['extract'][:200]}" for h in hits]
         extras["text_rag_snippets"] = snippets
-        synthesis = vqa_prompts.format_synthesis_rag(annotations, snippets)
+        synthesis = vqa_prompts.format_synthesis_rag(annotations, snippets,
+                                                     culture or "")
     else:
         synthesis = vqa_prompts.format_synthesis(annotations)
     description = backend.caption(
@@ -74,11 +76,15 @@ def main() -> None:
     ap.add_argument("--mode", default="generic", choices=["generic", "cultural-vqa"])
     ap.add_argument("--backend", default="ollama",
                     choices=["ollama", "hf", "smolvlm", "smolvlm-noctx",
-                             "smolvlm-rag", "ollama-rag"],
+                             "smolvlm-rag", "smolvlm-ragdistill", "ollama-rag",
+                             "vllm", "vllm-rag"],
                     help="Model backend. Suffixed variants ('smolvlm-noctx', "
-                         "'smolvlm-rag', 'ollama-rag') run the same base code path "
-                         "but tag the output filename honestly for the run variant — "
-                         "no more post-hoc renames.")
+                         "'smolvlm-rag', 'ollama-rag', 'vllm-rag') run the same "
+                         "base code path but tag the output filename honestly for "
+                         "the run variant — no more post-hoc renames.")
+    ap.add_argument("--base-url", default=None,
+                    help="vllm backends only: OpenAI-compatible endpoint, e.g. "
+                         "http://<gcp-vm>:8000/v1")
     ap.add_argument("--model", default=None, help="Override model id/tag for the backend.")
     ap.add_argument("--adapter", default=None,
                     help="LoRA adapter dir (smolvlm backend only) for the fine-tuned Stage 1 model.")
@@ -123,11 +129,13 @@ def main() -> None:
         backend_key = "smolvlm"
     elif args.backend.startswith("ollama"):
         backend_key = "ollama"
+    elif args.backend.startswith("vllm"):
+        backend_key = "vllm"
     else:
         backend_key = args.backend
     backend = get_backend(backend_key, args.model,
                           temperature=args.temperature, seed=args.seed,
-                          adapter=args.adapter)
+                          adapter=args.adapter, base_url=args.base_url)
 
     ctx: dict[str, str] = {}
     if args.context_json:
@@ -149,7 +157,7 @@ def main() -> None:
     else:
         def runner(b, p, c=None):  # noqa: E731 - closes over joint/text_bank
             return _run_cultural_vqa(b, p, context=c, joint=args.joint_questions,
-                                     text_bank=text_bank)
+                                     text_bank=text_bank, culture=args.lang)
 
     n_written = 0
     with out_path.open("w", encoding="utf-8") as f:

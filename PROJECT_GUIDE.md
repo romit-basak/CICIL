@@ -138,6 +138,24 @@ LoRA (a technique that trains a small set of extra parameters instead of the who
 model, much cheaper and faster). Why fine-tune at all, and why this specific model? See
 §8 for the reasoning.
 
+**Retrieval for Stage 1 too — an encyclopedia at the model's elbow (added late July).**
+The human evaluation (§6) revealed that even the culturally-prompted model almost never
+names an actual culture, artifact, or sacred site — because it has nowhere to *learn*
+them from: a 2B model can't memorize the encyclopedia, and it turned out even the 7B
+teacher names a culture in ≤10% of outputs unaided. The fix mirrors how a human
+annotator actually works: look at the image, then look things up. Two lookup channels,
+both harvested systematically from Wikipedia/Wikimedia Commons per culture:
+- **Similar-image search (CBIR):** the dev image is compared against ~220–520
+  license-clean Commons photos of that culture; the nearest matches' titles and
+  descriptions ("Ñandutí detalle.jpg", "Wirikuta desert...") are injected into every
+  question as context, each tagged with a confidence band («coincidencia fuerte» for
+  near-certain matches, «posiblemente»-grade otherwise).
+- **Encyclopedia text search:** the model's own visual answers query ~90–540 Wikipedia
+  lead paragraphs for that culture; retrieved snippets feed the final synthesis step.
+Crucially, the prompt asserts the image's culture as *given* (we know it from the task
+metadata — that's how the right bank was chosen), and reserves hedging for the concept
+identification, which is the genuinely uncertain part.
+
 ### Stage 2, piece by piece
 
 **Retrieval-augmented translation.** Rather than asking Gemini to translate cold, Stage
@@ -201,21 +219,25 @@ give the student model more to learn from. Two real problems came up here:
   images were actually pictures of a Spanish castle. Caught by spot-checking a sample
   caption, fixed by re-scraping with more specific category names.
 - After all that work, the honest measured benefit was small: it helped the Spanish-
-  language proxy metric by about 1 point, but didn't clearly help (and arguably
-  slightly hurt) the final, real, translated-language metric. See the next point for
-  why that comparison itself is currently unreliable.
+  language proxy metric by about 1 point, but didn't clearly help the final,
+  translated-language metric. (That comparison was later re-run through the real
+  retrieval banks once they existed — the arms came out tied, confirming the null.)
+  The scraped images did, however, become the backbone of the Stage 1 retrieval bank
+  (§4), which grew to ~2,100 images across the five cultures — so the scrape paid off,
+  just not for the purpose it was built for.
 
-**The retrieval bank for Stage 2 isn't actually built yet.** This is probably the single
-most important open gap in the whole project right now. To do "look up similar real
-examples" (§4), Stage 2 needs a real bank of Spanish↔target-language sentence pairs to
-search. Right now, for 4 of 5 languages, that bank **doesn't exist at all** — Gemini
-translates completely blind. For the 5th (Wixárika), the bank has only 20 entries — the
-same 20 images used elsewhere as our tiny gold-evaluation set, not a real corpus. This
-means **every end-to-end (translated-language) score we've measured so far is running
-through an unfinished, placeholder Stage 2** — we genuinely cannot yet tell whether
-Stage 1 improvements "don't survive translation" or whether Stage 2's retrieval is just
-too thin to show any difference. This was flagged directly by a teammate mid-project and
-is a real, load-bearing caveat on several of our current results.
+**For weeks, the Stage 2 retrieval bank didn't actually exist.** (Since resolved —
+see "The banks got built" below — but it shaped everything measured in this period.)
+To do "look up similar real examples" (§4), Stage 2 needs a real bank of
+Spanish↔target-language sentence pairs to search. For most of the project, for 4 of 5
+languages, that bank **didn't exist at all** — Gemini translated completely blind. For
+the 5th (Wixárika), the bank had only 20 entries — the same 20 images used elsewhere
+as our tiny gold-evaluation set, not a real corpus. This meant every end-to-end
+(translated-language) score measured in that period ran through an unfinished,
+placeholder Stage 2 — we genuinely couldn't tell whether Stage 1 improvements "didn't
+survive translation" or whether Stage 2's retrieval was just too thin to show any
+difference. This was flagged directly by a teammate mid-project, and any pre-bank
+end-to-end number quoted from old notes still carries that caveat.
 
 **A parallel teammate deliverable (an experimental Stage 2 upgrade) arrived built on a
 different, older version of the code than what we'd since evolved to.** It added a
@@ -225,7 +247,8 @@ into concurrent changes on our side, it would have silently deleted an unrelated
 essential feature (the ability to score outputs from different fine-tuned model
 versions) if merged without reconciling the two first. Caught before merging by diffing
 line-by-line rather than trusting the "just drop these files in" instructions at face
-value.
+value. (Since reconciled and merged — the cultural-vs-text retrieval ablation is part
+of the Stage 2 sweep now running.)
 
 **Infrastructure problems, repeatedly.** Training runs on cloud GPUs got interrupted by
 preemption (cheap "spot" instances can be reclaimed at any time), by out-of-memory
@@ -245,6 +268,58 @@ result). The honest conclusion isn't "our numbers are wrong" — it's that a sin
 automatic metric, scored against one reference caption per image, on only ~50 images, is
 a genuinely noisy way to measure "did this actually get better," and we should say so
 plainly rather than overclaim a win every time a number goes up.
+
+**The banks got built — and the "real" bank made things worse.** (Late July.) All five
+retrieval banks now exist for real: 8k–16k genuine Spanish↔target sentence pairs per
+language, with per-source licenses documented. The surprise: on Wixárika, the real
+9,940-pair bank scored *worse* end-to-end than the 20-pair placeholder it replaced —
+because the placeholder pairs, tiny as they were, were caption-style and in-domain,
+while the real corpus is general text. Domain match beats scale for few-shot retrieval.
+This also retroactively cleaned up an earlier confusion: an apparent gap between two
+Stage 1 ablation arms vanished once both were re-run through the same real bank.
+
+**Wixárika and Bribri captions were coming out as word-salad loops.** The human eval
+surfaced that most captions in the two hardest languages degenerated into repetition
+("kek tso tso tso..."). An A/B ablation found the fix was not the obvious knob
+(frequency penalty did nothing) but plain sampling temperature: greedy-ish decoding at
+temperature 0 makes a low-confidence model loop, while temperature 0.7 with a fixed
+seed (still reproducible) cut degeneration by roughly two-thirds and *raised* ChrF++ —
++5.0 on Wixárika. A reminder that "deterministic = more scientific" isn't free.
+
+**The human eval said the quiet part out loud: nobody names a culture.** Scoring 15
+images by hand (via English pivot translations, since nobody on the team reads Spanish
+— itself a documented protocol decision) found cultural accuracy at floor for BOTH the
+generic and cultural arms, and only 7% of all outputs named any culture at all. Root
+cause, verified in code: Stage 1 was never told which culture the image came from, even
+though the task metadata says so. Recognizing a culture purely from pixels is an
+ill-posed problem (the same lace pattern exists on three continents) — the pipeline was
+withholding the one piece of information that disambiguates it.
+
+**Retrieval into Stage 1 fixed the naming problem — with one big caveat each way.**
+(The current work.) With both retrieval channels on, the rate at which the *same 2B
+student* names the culture jumped from ~2–14% to 36–92% across all five languages, and
+on the languages whose images show distinctive sites/artifacts it started naming the
+*specific* ones (Wirikuta for bare desert hills that every earlier arm called "no
+cultural content"; Cahuita and cacao for Bribri). The caveats: (1) ChrF++ barely moves
+— the reference captions can't reward naming they don't contain, so we measure this
+with term-rate audits and human spot checks instead; (2) retrieval can misattribute —
+the Paraguay-heavy Guaraní bank pulled an Argentine chamamé festival across the border,
+confidently.
+
+**A capability gap we didn't expect: the small model can't hedge — and the fix
+worked, with a catch.** The retrieval prompts instruct the model to mark uncertain
+matches with "posiblemente." The 7B teacher does (roughly half its captions hedge
+appropriately). The 2B student did the opposite — it hedged *less* than without
+retrieval, converting every retrieved concept into a confident assertion, right or
+wrong, and prompt engineering didn't fix it. Retraining the student on teacher
+outputs *with* the retrieval context in the training prompts (RAG-aware
+distillation) **did** fix it: the retrained student hedges at teacher-like rates in
+all five languages. The catch: it inherited the teacher's conservatism along with
+its caution — it now hedges the culture properly but stopped naming the specific
+sites and artifacts the un-retrained student had been (correctly, if overconfidently)
+naming. At 2B parameters, specificity and calibration appear to trade off; only the
+7B teacher holds both at once. That trade-off is itself one of the paper's cleanest
+findings.
 
 ---
 
@@ -270,9 +345,10 @@ plainly rather than overclaim a win every time a number goes up.
   alternative to compare against, not abandoned.
 - **Why culturally-indexed retrieval instead of plain text-similarity retrieval?** The
   hypothesis is that cultural relevance, not surface wording, is what makes a retrieved
-  example actually useful as a translation guide. This is currently a testable but
-  *unconfirmed* hypothesis — it's the exact question the newest Stage 2 ablation code is
-  built to answer once a real retrieval bank exists.
+  example actually useful as a translation guide. This is a testable but still
+  *unconfirmed* hypothesis — the real banks now exist, and the Stage 2 sweep
+  (cultural-vs-text query arms × retrieval depth) is the experiment that answers it;
+  results merge into the final paper table.
 - **Why Vertex AI instead of just calling the Gemini API directly?** Licensing. The
   dataset's license (CC BY-NC) forbids feeding it into a service that trains on the
   data. The free/direct Gemini API tier does train on requests; Vertex AI (covered by
@@ -285,25 +361,31 @@ plainly rather than overclaim a win every time a number goes up.
 
 ---
 
-## 8. Where things honestly stand right now
+## 8. Where things honestly stand right now (updated 2026-07-27)
 
 - Stage 1 distillation is done and is a real, positive result: base model → distilled
   model closed nearly the whole gap to a 7B teacher, at 2B parameters.
 - The Commons-image augmentation and the "does teacher context help" ablation are both
-  done, and both came back as **honest negative/null results** on the metric that
-  matters most (end-to-end translated-language quality) — worth reporting as such, not
-  spun into a win.
-- The single biggest open blocker for trusting *any* end-to-end number is that Stage 2's
-  retrieval bank is still a placeholder for every language. Building it out (mostly a
-  data-sourcing task at this point — the search/lookup code already works) is higher
-  priority than it might look, because it may change how several existing results should
-  be read.
-- A newly-arrived Stage 2 ablation upgrade (testing cultural vs. plain-text retrieval)
-  is a good idea that needs a short integration pass before merging, not a blind drop-in.
+  done, and both came back as **honest negative/null results** on end-to-end quality —
+  reported as such, not spun into a win.
+- **The retrieval banks are real now** (all 5 languages, licenses documented), the old
+  placeholder-bank caveat is resolved — and it resolved *interestingly*: domain match
+  beats corpus size (§6).
+- **The decoding fix is in** (temperature 0.7 + seed): Wixárika/Bribri degeneration is
+  down by ~two-thirds and their scores up; all final numbers use this setting.
+- **Stage 1 retrieval is the current headline**: culture-naming went from near-zero to
+  the strong majority of captions across all five languages, with genuine site/artifact
+  grounding on the languages whose images support it, verified by audits and spot
+  checks rather than ChrF++ (which is blind to it). Its cost side (confident
+  misattribution by the small model) is measured, not hidden.
+- **In flight right now**: a RAG-aware re-distillation of the student (does calibration
+  transfer from teacher to student?), the final all-language Stage 2 re-runs at the new
+  decoding, and the merged results table. The team's Stage 2 sweep (retrieval-k and
+  query-arm ablations) runs in parallel on the same fixed inputs.
 
-If you only remember one thing from this document: **the interesting, honest story of
-this project so far is less "we found a big win" and more "we built the machinery
-carefully, found that several plausible improvements don't clearly help on the metric
-that matters, and figured out exactly which part of the pipeline is still too
-unfinished to trust the current numbers."** That's a legitimate scientific contribution,
-and it's the story we should actually tell in the paper.
+If you only remember one thing from this document: **the story matured from "several
+plausible improvements don't clearly help" to "we found the load-bearing missing
+ingredient — cultural knowledge has to be *supplied* at inference, not hoped for from
+the weights — and we can show both what that fixes and what it breaks."** The honest
+accounting of the caveats (metric blindness, misattribution, the hedging capability
+gap) is as much a part of the contribution as the win.

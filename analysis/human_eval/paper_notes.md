@@ -175,6 +175,31 @@ scale, is the binding constraint on cultural naming.**
   (*"piel de jaguar... La Recova, Brasil"* — a retrieval-induced error, worse than
   the baseline's vague honesty). RAG's cost side, use alongside the win.
 
+**FINAL UPDATE 2026-07-27 — the distillation verdict (both directions at once):**
+RAG-aware distillation (student retrained on 13,765 teacher triples whose prompts
+include the retrieval context, byte-matching deployment) CLOSED the hedging
+inversion — ragdistill hedge rates 23–34/50 across all 5 languages, teacher-like,
+where prompting alone got 0–15/50. **Calibration is distillable.** But it
+transferred the teacher's conservatism with it: ragdistill's concept rate
+collapses to teacher levels (wixárika 24→1, bribri 25→5 vs the prompt-only RAG
+student). hch_021 makes the trade visible: prompt-RAG student names Wirikuta
+flatly (right, but uncalibrated); ragdistill hedges the culture properly but no
+longer names the site. Framing for the paper: **you can distill the caution, but
+specificity and calibration trade off at 2B — only the 7B teacher holds both.**
+ChrF++ side: bribri student-RAG +1.19 (thinnest bank, biggest metric gain);
+teacher-RAG +1.7/+1.9 on grn/hch; maya/nahuatl ≈ −1 where no concept grounded.
+
+**UPDATE 2026-07-27 (all-culture extension, interim):** the finding below is now
+confirmed on all 5 languages with matched v2 calibrated prompts (culture stated
+as given; CBIR neighbors tagged «coincidencia fuerte/posible»; channel-ranked
+hedging rules): teacher hedge rates 24–38/50 everywhere, student 0–15/50
+everywhere (at/below its own no-RAG baseline). Prompting does not fix the
+inversion. Also new: report culture-NAME rate and CONCEPT rate separately in the
+final table — with culture-as-given, name mentions are partly prompt echo, while
+concept naming (Wirikuta, cacao/Cahuita: wixárika 0→24/50, bribri 5→25/50) is
+the real retrieval signal. Maya shows 0 concepts in every arm incl. teacher —
+likely a dev-set property (daily-life imagery), RQ3 material.
+
 **The hedging-capability finding (new, paper-worthy):** the calibration
 instruction ("mark uncertain matches with posiblemente") is followed by the 7B
 teacher (hedge rate 27/50, 23/50) and *inverted* by the 2B student, which hedges

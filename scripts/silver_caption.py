@@ -87,24 +87,37 @@ def done_ids(culture: str, mode: str, prefix: str = "commons") -> set[str]:
 
 
 def caption_one(backend, backend_name: str, row: dict, commons_root: Path,
-                culture: str, mode: str, no_context: bool = False) -> dict | None:
+                culture: str, mode: str, no_context: bool = False,
+                rag: dict | None = None) -> dict | None:
     image_path = commons_root / row["local_file"]
     if not image_path.exists():
         return None
-    # no_context = the ablation arm: identical teacher/prompts/seed, but the
-    # Commons description is withheld, isolating its contribution to the silver.
-    context = None if no_context else (
-        (row.get("description") or "")[:CONTEXT_MAX_CHARS] or None)
+    if rag is not None:
+        # RAG-aware arm (2026-07-26): the teacher gets exactly the deployment-time
+        # context — CBIR neighbors (self-matches pre-excluded by --lookup-commons)
+        # instead of the image's own Commons description, plus text-RAG synthesis
+        # with the v2 calibrated prompt. The student then trains WITH this context
+        # (distill_data --rag), so it learns to *use* retrieval, not ignore it.
+        context = rag["ctx"].get(row["local_file"]) or None
+        text_bank = rag["text_bank"]
+    else:
+        # no_context = the ablation arm: identical teacher/prompts/seed, but the
+        # Commons description is withheld, isolating its contribution to the silver.
+        context = None if no_context else (
+            (row.get("description") or "")[:CONTEXT_MAX_CHARS] or None)
+        text_bank = None
     try:
         if mode == "generic":
-            description, annotations = _run_generic(backend, image_path, context=context)
+            description, annotations, extras = _run_generic(
+                backend, image_path, context=context)
         else:
-            description, annotations = _run_cultural_vqa(
-                backend, image_path, context=context, joint=True)
+            description, annotations, extras = _run_cultural_vqa(
+                backend, image_path, context=context, joint=True,
+                text_bank=text_bank, culture=culture)
     except Exception as e:  # noqa: BLE001 - one bad image must not abort the run
         tqdm.write(f"[error] {image_path.name}: {e}")
-        description, annotations = "", {}
-    return {
+        description, annotations, extras = "", {}, {}
+    record = {
         "id": image_path.stem,
         "filename": image_path.name,
         "language": culture,
@@ -117,16 +130,20 @@ def caption_one(backend, backend_name: str, row: dict, commons_root: Path,
         "source": "wikimedia-commons",
         "license": row.get("license", ""),
     }
+    if rag is not None:
+        record["cbir_context"] = context or ""
+        record["text_rag_snippets"] = extras.get("text_rag_snippets", [])
+    return record
 
 
 def run(commons_root: Path, cultures: list[str], modes: list[str],
         backend_name: str, base_url: str | None, model: str | None,
         seed: int, workers: int, limit: int | None,
-        no_context: bool = False) -> None:
+        no_context: bool = False, rag: bool = False) -> None:
     provenance = load_provenance(commons_root)
     config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     write_lock = threading.Lock()
-    prefix = "commons-noctx" if no_context else "commons"
+    prefix = "commons-rag" if rag else ("commons-noctx" if no_context else "commons")
 
     def make_backend():
         kwargs = {"temperature": 0.0, "seed": seed}
@@ -152,6 +169,15 @@ def run(commons_root: Path, cultures: list[str], modes: list[str],
         rows = [r for r in provenance if r["culture"] == culture]
         if limit is not None:
             rows = rows[:limit]
+        rag_state = None
+        if rag:
+            from src.stage1.rag_context import TextBank
+            ctx_path = config.OUTPUT_DIR / f"cbir_context_commons_{culture}.json"
+            if not ctx_path.exists():
+                raise FileNotFoundError(
+                    f"{ctx_path} missing — run rag_context --lookup-commons first.")
+            rag_state = {"ctx": json.loads(ctx_path.read_text(encoding="utf-8")),
+                         "text_bank": TextBank(culture)}
         for mode in modes:
             out_path = config.OUTPUT_DIR / f"{prefix}_{culture}_{mode}_{backend_name}.jsonl"
             skip = done_ids(culture, mode, prefix)
@@ -166,7 +192,8 @@ def run(commons_root: Path, cultures: list[str], modes: list[str],
             with out_path.open("a", encoding="utf-8") as f, \
                  ThreadPoolExecutor(max_workers=workers) as pool:
                 futures = [pool.submit(caption_one, backend_for_thread(), backend_name,
-                                       row, commons_root, culture, mode, no_context)
+                                       row, commons_root, culture, mode, no_context,
+                                       rag_state)
                           for row in todo]
                 for fut in tqdm(as_completed(futures), total=len(futures),
                                 desc=f"{culture}/{mode}"):
@@ -194,13 +221,18 @@ def main() -> None:
                     help="Concurrent captioning threads (vllm: use ~8; ollama: keep at 1).")
     ap.add_argument("--limit", type=int, default=None,
                     help="first N images per culture (smoke test)")
-    ap.add_argument("--no-context", action="store_true",
-                    help="Ablation arm: withhold Commons descriptions from the "
-                         "teacher. Writes/resumes under commons-noctx_* files.")
+    arm = ap.add_mutually_exclusive_group()
+    arm.add_argument("--no-context", action="store_true",
+                     help="Ablation arm: withhold Commons descriptions from the "
+                          "teacher. Writes/resumes under commons-noctx_* files.")
+    arm.add_argument("--rag", action="store_true",
+                     help="RAG-aware arm: deployment-style CBIR context (from "
+                          "rag_context --lookup-commons) + text-RAG synthesis with "
+                          "the calibrated prompt. Writes under commons-rag_* files.")
     args = ap.parse_args()
     run(args.commons_root, args.cultures, args.modes, args.backend,
         args.base_url, args.model, args.seed, args.workers, args.limit,
-        no_context=args.no_context)
+        no_context=args.no_context, rag=args.rag)
 
 
 if __name__ == "__main__":

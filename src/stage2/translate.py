@@ -74,7 +74,8 @@ INDEXED_LANGS = {"wixarika"}
 # Which Stage 1 backend produced the input JSONL. Shared with run_sweep.py so
 # the choices list has one source of truth.
 BACKEND_CHOICES = ["ollama", "smolvlm", "hf", "vllm", "smolvlm-devonly",
-                   "smolvlm-noctx", "smolvlm-rag", "ollama-rag"]
+                   "smolvlm-noctx", "smolvlm-rag", "ollama-rag", "vllm-rag",
+                   "smolvlm-ragdistill"]
 
 GEMINI_MODEL = "gemini-2.5-flash"
 # Decoding: see call_gemini's docstring for the ablation behind these values.

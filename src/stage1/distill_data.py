@@ -20,6 +20,16 @@ The prompts are exactly what the student sees at deployment (the Commons
 or dropped — the student decodes 64-96 tokens, so unbounded targets would
 teach truncation.
 
+``--rag`` (2026-07-26) reverses the context-free choice FOR THE RAG ARM ONLY,
+because deployment changed: at inference the student now receives CBIR context
+on every prompt and retrieved snippets in synthesis (generate_descriptions
+--context-json/--text-rag). Training prompts are rebuilt with the exact same
+functions the inference path uses (with_context + format_synthesis_rag over the
+cbir_context/text_rag_snippets stored in each silver record), so they byte-match
+deployment. Sources switch to the RAG-aware teacher files (commons-rag_* and
+{lang}_dev_cultural-vqa_{vllm-rag,ollama-rag}.jsonl). The pilot showed the
+context-blind student *ignores* injected context; this is the fix under test.
+
 Contamination guard: any image colliding with the 20 gold pilot images
 (sha1/dHash via ``dedup.pilot_index``) is excluded, whatever its source.
 
@@ -72,9 +82,16 @@ def _read_jsonl(path: Path) -> list[dict]:
 
 
 def _triples_for(record: dict, image_path: Path, source: str, culture: str,
-                 max_words: int) -> list[dict]:
+                 max_words: int, rag: bool = False) -> list[dict]:
     """Deployment-aligned pairs from one teacher record (either mode)."""
     triples = []
+    # RAG arm: rebuild prompts exactly as the inference path does, from the
+    # retrievals stored in the silver record.
+    cbir = (record.get("cbir_context") or "") if rag else ""
+    snippets = (record.get("text_rag_snippets") or []) if rag else []
+
+    def wrap(prompt: str) -> str:
+        return vqa_prompts.with_context(prompt, cbir) if rag else prompt
 
     def add(task: str, prompt: str, target: str | None) -> None:
         target = clip_target(target or "", max_words)
@@ -92,19 +109,22 @@ def _triples_for(record: dict, image_path: Path, source: str, culture: str,
     if record.get("mode") == "cultural-vqa":
         annotations = record.get("cultural_annotations") or {}
         for cat in vqa_prompts.CULTURAL_QUESTIONS:
-            add(f"category:{cat}", vqa_prompts.joint_question(cat),
+            add(f"category:{cat}", wrap(vqa_prompts.joint_question(cat)),
                 annotations.get(cat, ""))
         if annotations:
-            add("synthesis", vqa_prompts.format_synthesis(annotations),
+            synthesis = (vqa_prompts.format_synthesis_rag(annotations, snippets,
+                                                          culture)
+                         if rag else vqa_prompts.format_synthesis(annotations))
+            add("synthesis", wrap(synthesis),
                 record.get("generated_spanish", ""))
     else:  # generic
-        add("generic", vqa_prompts.GENERIC_PROMPT,
+        add("generic", wrap(vqa_prompts.GENERIC_PROMPT),
             record.get("generated_spanish", ""))
     return triples
 
 
 def build(sources: list[str], out_path: Path, max_words: int,
-          commons_prefix: str = "commons") -> None:
+          commons_prefix: str = "commons", rag: bool = False) -> None:
     guard = pilot_index()
     triples: list[dict] = []
     guarded = Counter()
@@ -117,11 +137,22 @@ def build(sources: list[str], out_path: Path, max_words: int,
             if guard.match(image_path):
                 guarded[f"{source}/{culture}"] += 1
                 continue
-            triples.extend(_triples_for(rec, image_path, source, culture, max_words))
+            triples.extend(_triples_for(rec, image_path, source, culture,
+                                        max_words, rag=rag))
 
     if "dev" in sources:
         for lang in config.LANGUAGES:
             by_id = {ex.id: ex.image_path for ex in load_split(lang, "dev")}
+            if rag:
+                # RAG-aware teacher dev files only (never student *-rag outputs);
+                # prefer the vLLM run, fall back to the pilot's local ollama run.
+                for tag in ("vllm-rag", "ollama-rag"):
+                    path = config.OUTPUT_DIR / f"{lang}_dev_cultural-vqa_{tag}.jsonl"
+                    if path.exists():
+                        guarded_extend(_read_jsonl(path),
+                                       lambda r: by_id.get(r["id"]), "dev", lang)
+                        break
+                continue
             for mode in ("cultural-vqa", "generic"):
                 records = _read_jsonl(
                     config.OUTPUT_DIR / f"{lang}_dev_{mode}_ollama.jsonl")
@@ -174,12 +205,21 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
     ap.add_argument("--max-target-words", type=int, default=MAX_TARGET_WORDS)
     ap.add_argument("--commons-prefix", default="commons",
-                    choices=["commons", "commons-noctx"],
+                    choices=["commons", "commons-noctx", "commons-rag"],
                     help="Which Commons silver arm to build from "
                          "(commons-noctx = the description-ablation arm).")
+    ap.add_argument("--rag", action="store_true",
+                    help="RAG-aware triples: prompts include CBIR context + the "
+                         "calibrated RAG synthesis, byte-matching deployment. "
+                         "Implies --commons-prefix commons-rag; defaults --out to "
+                         "distill_triples_rag.jsonl to protect the base set.")
     args = ap.parse_args()
+    if args.rag:
+        args.commons_prefix = "commons-rag"
+        if args.out == DEFAULT_OUT:
+            args.out = config.OUTPUT_DIR / "distill_triples_rag.jsonl"
     build(args.sources, args.out, args.max_target_words,
-          commons_prefix=args.commons_prefix)
+          commons_prefix=args.commons_prefix, rag=args.rag)
 
 
 if __name__ == "__main__":
