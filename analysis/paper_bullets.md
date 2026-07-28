@@ -120,13 +120,27 @@ the bottom.
 - ChrF++ flat (19.35→19.10; 13.18→12.85 in the pilot) — metric blindness, argued
   not assumed (S003's fabricated year cost nothing; repetition loops scored +6).
 - Case studies (`analysis/human_eval/paper_notes.md`):
-  - hch_021 (bare hills): every prior arm "no cultural content" → "Wirikuta, San
-    Luis Potosí" (student), "posiblemente... uno de los cinco lugares más sagrados"
-    (teacher). Sacred geography works through retrieval.
-  - grn_025 (chamamé): teacher gets festival/country/garment right; student-RAG
-    misattributes to Paraguay (bank prior pulls attribution) — the cost side.
+  - ⚠️ hch_021 (bare hills) — **RETRACTED as a "sacred geography works" example
+    (2026-07-28)**. Direct visual check of the actual top-1 CBIR neighbor: it's
+    a ceremonial-gathering photo, not a canyon — nothing like hch_021 beyond
+    coarse tone/terrain. "Wirikuta" is copied from the neighbor's caption text,
+    not recognized. Reframe as: broad, unfalsifiable regional claims pass every
+    check we have (regex, ChrF++, casual read) the way narrow ones can't — a
+    metric-validity limitation, not a win. See paper_notes.md for the full
+    correction and a 3/4 mismatch rate among spot-checked "posible"-tier
+    retrievals generally (do not treat individual concept-rate hits as verified).
+  - grn_025 (chamamé): teacher gets festival/country/garment right (reads the
+    actual poster); student-RAG misattributes to Paraguay/Itauguá — but this one
+    IS independently verifiable (a visible "CORRIENTES"/"Mundial de Chamamé"
+    poster proves it wrong), unlike hch_021. Good CBIR match (`cbir_relevance`=2)
+    used badly: the model copied the *retrieved neighbor's* location instead of
+    reading its own image's poster — RAG displaced a grounding strategy that
+    worked pre-RAG (round-1 arms read this same poster correctly, only
+    fabricating the year).
   - grn_019 (ñandutí): still missed by name in all arms; student-RAG fabricates
-    ("piel de jaguar... Brasil"). Honest negative.
+    ("piel de jaguar... Brasil"). Honest negative. CBIR retrieval itself is also
+    a confirmed mismatch here (market stall, not lace) — bad retrieval, not just
+    bad caption use.
 - **Hedging-inversion finding (now confirmed across all 5 langs, matched v2
   prompts):** teacher follows calibration everywhere (hedge 24–38/50); the 2B
   student inverts it everywhere (0–15/50, at/below its no-RAG baseline) — it
@@ -159,8 +173,9 @@ the bottom.
 - RQ1: cultural prompting alone ≈ no; + retrieval ≈ yes on cultural specificity,
   invisible to ChrF++. RQ2: resource gradient is stark — Bribri thin at *every*
   layer (7.5k pairs, 90 wiki extracts, 2 usable Commons seeds; see Limitations).
-  RQ3: ⏳ per-category table (landscape was hardest pre-RAG; hch_021 suggests
-  retrieval helps it most — check per-category term rates tonight).
+  RQ3: ⏳ per-category table (landscape was hardest pre-RAG; use wixárika's
+  aggregate concept-rate jump, NOT the hch_021 anecdote, which is retracted —
+  see Limitations).
 - Proxy vs end-to-end disagreement (distillation: gold-20 win, end-to-end tie) —
   metric caution for the field.
 
@@ -174,6 +189,21 @@ the bottom.
 - Wikipedia/Commons coverage is itself culturally skewed (Bribri: ~12–17k people,
   no state backing, no own-language Wikipedia — the resource gradient reproduces
   inside the retrieval source).
+- **CBIR concept-rate validity (found 2026-07-28, load-bearing):** "concept
+  rate" counts a caption naming a specific site/artifact, on the assumption
+  that naming implies genuine visual grounding via the retrieved neighbor.
+  Manually re-verifying retrieved images against eval images (not just reading
+  titles) found 3 of 4 spot-checked "posible"-tier (0.55–0.80 cosine, the large
+  majority of all neighbors) retrievals are visual mismatches sharing only
+  coarse tone/terrain, including our former flagship example (hch_021/
+  "Wirikuta" — see paper_notes.md for the full retraction). The model still
+  names the concept, copied from the mismatched neighbor's caption text, not
+  recognized. Broad/regional claims (a whole desert) pass this undetected in a
+  way narrow/specific claims (a named town, caught via a visible poster in
+  grn_025) don't — concept rate is a mix of genuine grounding and
+  coarse-similarity-triggered label copying, and n=4 is too small to split the
+  two quantitatively. State plainly; do not present any single concept-rate
+  example as verified without an individual image check.
 
 ## 8. Ethics / Data statement
 - All data public; per-source licenses + citations in `DATA_LICENSES.md` (YUA-ES-CCC
@@ -185,13 +215,20 @@ the bottom.
 
 ## ✅ FINAL RESULTS (2026-07-27) — table complete, plug into §5
 
+⚠️ **2026-07-28: point 2 and the hch_021 line in point 4 below are corrected by
+the "CBIR concept-rate validity" limitation and the hch_021 retraction added
+above — read those before using this section. The aggregate numbers (24, 25,
+0) still stand as counts; the *individual example citations* (Wirikuta,
+specifically) do not, and neither does the framing "concept grounding follows
+the dev set" as a clean causal story without the retrieval-verification caveat.**
+
 Full table: `uv run python -m analysis.rag_pilot` (or STAGE1_HANDOFF.md 07-27
 section). The four headline readings:
 1. **Culture-naming fixed everywhere**: ≤3/50 → 18–39/50, all 5 languages.
 2. **Concept grounding follows the dev set**: wixárika 0→24, bribri 5→25
-   (Wirikuta, cacao/Cahuita); maya 0 in ALL arms incl. 7B teacher (daily-life
-   imagery — the RQ3 answer: retrieval helps where images depict retrievable
-   concepts).
+   (cacao/Cahuita — NOT Wirikuta, retracted); maya 0 in ALL arms incl. 7B
+   teacher (daily-life imagery — the RQ3 answer: retrieval helps where images
+   depict retrievable concepts, MODULO the CBIR-verification caveat above).
 3. **ChrF++**: teacher-RAG +1.7/+1.9 on grn/hch; **bribri student-RAG +1.2**
    (6.81→8.00 — the thinnest-resource language gains most, RQ2 answer inverts
    the naive expectation); maya/nahuatl RAG ≈ −1 (no concept payoff → retrieval
@@ -199,9 +236,10 @@ section). The four headline readings:
 4. **Calibration IS distillable — but transfers with the teacher's conservatism**
    (the paper's second headline): ragdistill hedge 23–34/50 (teacher-like;
    prompting alone got 0–15) but concept rate collapses to teacher levels
-   (wixárika 24→1, bribri 25→5). hch_021 contrast: prompt-RAG student names
-   Wirikuta flatly; ragdistill hedges the culture but drops the site. A
-   precision/recall trade on cultural specificity — specific-but-uncalibrated
+   (wixárika 24→1, bribri 25→5). ~~hch_021 contrast: prompt-RAG student names
+   Wirikuta flatly; ragdistill hedges the culture but drops the site.~~
+   RETRACTED as an example (unverified retrieval) — cite the aggregate rate
+   collapse only. A precision/recall trade on cultural specificity — specific-but-uncalibrated
    vs calibrated-but-conservative; only the 7B holds both.
 
 Also note for §5.2: teacher grn_025 caption now reads the poster ("Mundial de

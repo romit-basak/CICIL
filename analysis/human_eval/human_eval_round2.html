@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CICIL Human Evaluation — Stage 1 (English-assisted)</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, sans-serif; margin: 0; background: #f5f5f4; color: #1c1917; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 16px; }
+  .card { background: #fff; border-radius: 10px; padding: 18px 22px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  img.eval { max-width: 100%; max-height: 420px; display: block; margin: 0 auto; border-radius: 6px; }
+  .imgerr { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; padding: 14px; border-radius: 6px; }
+  h1 { font-size: 1.15rem; } h2 { font-size: 1rem; margin: 4px 0 8px; }
+  .cap { margin: 6px 0; padding: 10px 12px; border-radius: 6px; line-height: 1.45; }
+  .cap-es { background: #f8fafc; border: 1px solid #e2e8f0; }
+  .cap-en { background: #eff6ff; border: 1px solid #bfdbfe; }
+  .cap-tg { background: #fafaf9; border: 1px dashed #d6d3d1; color: #78716c; font-size: .9rem; }
+  .cap-gold { background: #fefce8; border: 1px solid #fde047; font-weight: 500; }
+  .lbl { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: #64748b; display: block; margin-bottom: 3px; }
+  .dim { margin: 8px 0 12px; }
+  .dim b { display: block; margin-bottom: 4px; }
+  .dim label { display: block; font-size: .88rem; margin: 2px 0 2px 6px; cursor: pointer; }
+  .arm { border-top: 2px solid #e7e5e4; padding-top: 10px; margin-top: 14px; }
+  textarea { width: 100%; min-height: 70px; box-sizing: border-box; font: inherit; padding: 8px; border-radius: 6px; border: 1px solid #d6d3d1; }
+  .nav { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+  button { font: inherit; padding: 8px 18px; border-radius: 6px; border: 1px solid #a8a29e; background: #fff; cursor: pointer; }
+  button.primary { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+  .progress { font-variant-numeric: tabular-nums; color: #57534e; }
+  .warn { background: #fffbeb; border: 1px solid #fde68a; padding: 10px 12px; border-radius: 6px; margin-top: 10px; }
+  .done { color: #15803d; } .todo { color: #b45309; }
+  #gate input { font: inherit; padding: 8px; border-radius: 6px; border: 1px solid #d6d3d1; width: 240px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" id="gate">
+    <h1>CICIL Human Evaluation — Stage 1 captions (English-assisted)</h1>
+    <p>Score captions <b>A</b> and <b>B</b> independently on all three dimensions,
+    <i>then</i> pick a preference. Judge against the <b>image</b>, reading the Spanish
+    via its English translation. The Indigenous-language captions are shown for
+    reference only — do not score them. See <code>RUBRIC.md</code> for anchors and
+    protocol.</p>
+    <p><label>Your name (required): <input id="annotator" placeholder="e.g. Tisha"></label>
+    <button class="primary" onclick="start()">Start / resume</button></p>
+  </div>
+  <div id="app" style="display:none"></div>
+</div>
+<script>
+const ITEMS = [{"sample_id": "S001", "language": "Guaraní", "image_filename": "grn_019.jpg", "image_src": "../../data/americasnlp2026/data/dev/guarani/images/grn_019.jpg", "caption_A": "Una artesanía textil, específicamente un pielteo, hecho con hilos de colores vibrantes, representa la cultura guaraní en Atyra.", "caption_B": "La imagen muestra una tela tejida con un patrón de dorado, azul y rojo, típico de la artesanía textil guaraní.", "english_A": "A textile craft, specifically a *pielteo* [a type of patchwork or appliqué], made with vibrantly colored threads, represents Guarani culture in Atyra.", "english_B": "The image shows a woven fabric with a gold, blue, and red pattern, typical of Guaraní textile craftsmanship.", "target_A": "Peteĩ tembiapoporã ñembojeguapy, peteĩ pielteo, ojejapo hembópe sa'y vera reheve, ohechaukáva Guarani reko Atyrápe.", "target_B": "Peteĩ ao ojejapóva pytãsa, hovy ha pytãme, Guarani rembiapokue tekombo'e yma guare.", "cbir_title": "Artesania Textil en Atyra", "cbir_description_en": "Textile art", "cbir_image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Artesania%20Textil%20en%20Atyra.jpg?width=500", "cbir_score": "0.663", "cbir_band": "posible", "cbir_page_url": "https://commons.wikimedia.org/wiki/File:Artesania_Textil_en_Atyra.jpg"}, {"sample_id": "S002", "language": "Guaraní", "image_filename": "grn_023.jpg", "image_src": "../../data/americasnlp2026/data/dev/guarani/images/grn_023.jpg", "caption_A": "La imagen muestra las ruinas de São Miguel Arcanjo, Brasil, con estructuras antiguas construidas con piedra, representando una arquitectura colonial o colonial-moderno.", "caption_B": "La imagen muestra un sitio arqueológico guaraní con ruinas antiguas, posiblemente relacionado con la historia de São João Baptista, en Brasil.", "english_A": "The image shows the ruins of São Miguel Arcanjo, Brazil, with ancient structures built of stone, representing colonial or colonial-modern architecture.", "english_B": "The image shows a Guaraní archaeological site with ancient ruins, possibly related to the history of São João Baptista, in Brazil.", "target_A": "São Miguel Arcanjo, Brasil, ogypykuéra, itágui ojejapo ymave guare, ohechaukáva óga yma guare térã ko'ágãguáicha colonial.", "target_B": "Peteĩ tenda yma guaraní oñembyaíva, ikatu oĩ jopara São João Baptista rembiasakue ndive, Brasil-pe.", "cbir_title": "Guarani-Sítio Arqueológico de São Miguel Arcanjo (Brazil)", "cbir_description_en": "This media has been taken in the country: Brazil Intangible cultural heritage São Miguel das Missões, São Miguel das Missões, Rio Grande do Sul, Brazil Q503828, VIAF cluster ID: 5619150325587510090001, OpenStreetMap relation ID: 8741905, World Heritage Site ID: 275-001, P1076:, BabelNet ID:", "cbir_image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Guarani-S%C3%ADtio%20Arqueol%C3%B3gico%20de%20S%C3%A3o%20Miguel%20Arcanjo%20%28Brazil%29.jpg?width=500", "cbir_score": "0.743", "cbir_band": "posible", "cbir_page_url": "https://commons.wikimedia.org/wiki/File:Guarani-S%C3%ADtio_Arqueol%C3%B3gico_de_S%C3%A3o_Miguel_Arcanjo_(Brazil).jpg"}, {"sample_id": "S003", "language": "Guaraní", "image_filename": "grn_025.jpg", "image_src": "../../data/americasnlp2026/data/dev/guarani/images/grn_025.jpg", "caption_A": "Una mujer vestida con un traje tradicional paraguayo, típico de la cultura guaraní, atiende un evento cultural en Itaguá, Paraguay.", "caption_B": "Una mujer paraguaya Nanduti atiada con un traje tradicional paraguayo (typói) confeccionado con piezas de ñandutí, participa en un evento cultural en Itauguá, Paraguay.", "english_A": "A woman dressed in a traditional Paraguayan outfit, typical of Guaraní culture, attends a cultural event in Itaguá, Paraguay.", "english_B": "A Paraguayan woman, adorned with a traditional Paraguayan outfit (typói) [a traditional blouse] made with ñandutí [a traditional lace] pieces, participates in a cultural event in Itauguá, Paraguay.", "target_A": "Peteĩ kuña oñemonde ao teete Paraguáigua, hekópe guaraníicha, oho peteĩ aty guasu ojejapóva Itaguápe, Paraguái.", "target_B": "Peteĩ kuña Paraguáigua oñemonde typói ñandutígui ijapopyréva, oñembojeguáva ñandutí atia’ípe, oñembosako’i peteĩ ñembyatyrãme Itauguápe, Paraguái.", "cbir_title": "Nanduti 3py", "cbir_description_en": "Young woman dressed in a traditional Paraguayan dress (typói) [a traditional Paraguayan dress] made with ñandutí [a traditional Paraguayan lace] pieces, during the Ñandutí Float Parade in the city of Itauguá, Paraguay. October 2016.", "cbir_image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Nanduti%203py.jpg?width=500", "cbir_score": "0.728", "cbir_band": "posible", "cbir_page_url": "https://commons.wikimedia.org/wiki/File:Nanduti_3py.jpg"}, {"sample_id": "S004", "language": "Yucatec Maya", "image_filename": "yua_001.jpg", "image_src": "../../data/americasnlp2026/data/dev/maya/images/yua_001.jpg", "caption_A": "Un gato durmiendo en una cama floral en un entorno interior, probablemente en una casa o lugar doméstico.", "caption_B": "Un gato durmiente en un banco de pelaje con diseño geométrico en tonos azules, rojos y blancos, posiblemente en un entorno doméstico maya yucateco.", "english_A": "A cat sleeping on a floral bed in an indoor setting, likely in a house or domestic place.", "english_B": "A sleeping cat on a bench made of fur with a geometric design in shades of blue, red, and white, possibly in a Yucatecan Mayan domestic setting.", "target_A": "Juntúul miis táan u wenel yóok'ol jump'éel k'áan floreado ichil jump'éel naj wa kúuchil tu'ux ku kajtal máak.", "target_B": "Juntúul miis táan u wenel yóokʼol jumpʼéel kʼáancheʼ tsʼíibil yéetel u tsʼuʼukʼan u tʼuʼul, yaʼax, chak yéetel sak u boonil, maʼalob jeʼel u beytal u kaxtaʼal ichil jumpʼéel naj yucateco maya.", "cbir_title": "Tissage maya", "cbir_description_en": "", "cbir_image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Tissage%20maya.JPG?width=500", "cbir_score": "0.649", "cbir_band": "posible", "cbir_page_url": "https://commons.wikimedia.org/wiki/File:Tissage_maya.JPG"}, {"sample_id": "S005", "language": "Yucatec Maya", "image_filename": "yua_029.jpg", "image_src": "../../data/americasnlp2026/data/dev/maya/images/yua_029.jpg", "caption_A": "La imagen muestra un paisaje rural con vegetación densa y una cerca de piedra en primer plano, posiblemente relacionado con la cultura maya yucateca.", "caption_B": "La imagen muestra un paisaje rural con una pared de piedra en primer plano, rodeado por vegetación densa y árboles altos.", "english_A": "The image shows a rural landscape with dense vegetation and a stone fence in the foreground, possibly related to Yucatecan Maya culture.", "english_B": "The image shows a rural landscape with a stone wall in the foreground, surrounded by dense vegetation and tall trees.", "target_A": "U jool najil junpʼéel kʼáax yéetel yaʼabkach cheʼoʼob yéetel junpʼéel kóom pakʼ tu táanil, maʼalob u bin yéetel u kʼajlayil yucateco maya.", "target_B": "U jool najil k'áax tu'ux yaan junp'éel pak' yéetel tuunich táan u líik'il, u ka'anal che'ob yéetel ya'ax k'áax tu ts'u'umil.", "cbir_title": "Ruinas de Aké - panoramio (3)", "cbir_description_en": "Aké Ruins", "cbir_image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Ruinas%20de%20Ak%C3%A9%20-%20panoramio%20%283%29.jpg?width=500", "cbir_score": "0.814", "cbir_band": "fuerte", "cbir_page_url": "https://commons.wikimedia.org/wiki/File:Ruinas_de_Ak%C3%A9_-_panoramio_(3).jpg"}, {"sample_id": "S006", "language": "Yucatec Maya", "image_filename": "yua_035.jpg", "image_src": "../../data/americasnlp2026/data/dev/maya/images/yua_035.jpg", "caption_A": "La imagen muestra la interior de una iglesia maya yucateca, con arquitectura y decoración típicas de la región, incluyendo estructuras arquitectónicas y festivas con banderas.", "caption_B": "La imagen muestra una capilla en Acanceh, Yucatán, México, con vestimenta tradicional y decoración artesanal, representando una escena interior de la cultura maya yucateca.", "english_A": "The image shows the interior of a Yucatecan Maya church, with architecture and decoration typical of the region, including architectural and festive structures with flags.", "english_B": "The image shows a chapel in Acanceh, Yucatán, Mexico, with traditional clothing and artisanal decoration, representing an interior scene of Yucatecan Maya culture.", "target_A": "U yóokʼol juun túul yucateco ichil iglesia maya, yéetel u jejeláas meyajil sáasil yéetel u kʼaabaʼil le kʼiinoʼ, jeʼex u yóokʼol ku tsʼaʼabal yéetel u baʼalcheʼiloʼob yéetel u banderaʼob.", "target_B": "Juntúul capilla teʼ Acanceh, Yucatán, México, yéetel u nookʼoʼob yéetel u booxil u meyajil baʼal, ku yeʼesik jumpʼéel kúuchil ichil u kuxtal maya yucateca.", "cbir_title": "Yucatan capilla", "cbir_description_en": "A chapel near Merida Yucatan, Mexico, in the heart of Maya territory.", "cbir_image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Yucatan%20capilla.jpg?width=500", "cbir_score": "0.704", "cbir_band": "posible", "cbir_page_url": "https://commons.wikimedia.org/wiki/File:Yucatan_capilla.jpg"}, {"sample_id": "S007", "language": "Wixárika", "image_filename": "hch_021.jpg", "image_src": "../../data/americasnlp2026/data/dev/wixarika/images/hch_021.jpg", "caption_A": "La imagen muestra un paisaje natural de Wirikuta, en San Luis Potosí, México, con un cuerpo de agua y rocas, y vegetación en el suelo.", "caption_B": "La imagen muestra un paisaje natural con una montaña y un río, posiblemente relacionado con la cultura wixárika (huichol).", "english_A": "The image shows a natural landscape of Wirikuta, in San Luis Potosí, Mexico, with a body of water and rocks, and vegetation on the ground.", "english_B": "The image shows a natural landscape with a mountain and a river, possibly related to Wixárika [Huichol] culture.", "target_A": "Wirikuta, San Luis Potosí, México ti tatei niwet+ka tixeiya, kwie xeiya, tetexi, meti kwie xeiya.", "target_B": "Xapaweya h+ri tewiyari meta h+riyuri, hewewiyanikiekai wixaritari tewiyari.", "cbir_title": "La magia de wirikuta", "cbir_description_en": "This photograph was taken in the sacred desert of Wirikuta, in San Luis Potosí, Mexico. The sacred desert of Wirikuta is considered by the Wixárika culture to be one of the 5 most sacred places that extend throughout a large part of Mexican territory.", "cbir_image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/La%20magia%20de%20wirikuta.jpg?width=500", "cbir_score": "0.674", "cbir_band": "posible", "cbir_page_url": "https://commons.wikimedia.org/wiki/File:La_magia_de_wirikuta.jpg"}, {"sample_id": "S008", "language": "Wixárika", "image_filename": "hch_051.jpg", "image_src": "../../data/americasnlp2026/data/dev/wixarika/images/hch_051.jpg", "caption_A": "En una ceremonia tradicional wixárika, una mujer y un hombre posan frente a una estructura de techo de paja y paredes de ladrillo, rodeada de vestimenta tradicional y un cartel informativo.", "caption_B": "En un entorno rural, dos individuos, uno de los cuales sostiene un cartel de venta de mercancías, interactúan con una estructura tradicional de paja en un contexto cultural wixárika (huichol).", "english_A": "In a traditional Wixárika ceremony, a woman and a man pose in front of a structure with a thatched roof and brick walls, surrounded by traditional clothing and an informational sign.", "english_B": "In a rural setting, two individuals, one of whom is holding a sign advertising goods for sale, interact with a traditional straw structure in a Wixárika [Huichol] cultural context.", "target_A": "Wixaritari niukiya yu tix+k+ka yu m+k+ka, tewiya taku its+ heima teiwari, t+kawe tsina x+k+ka, niukiya yu tix+k+ka.", "target_B": "Yax+a niuki wixaritari, j+ta xeik+a, j+ta xeik+a t+wame niuki yarix+a, yaxeina niuki wixaritari, j+ta xeik+a t+wame niuki yarix+a, j+ta xeik+a t+wame niuki yarix+a, j+ta xeik+a t+wame niuki yarix+a, j+ta xeik+a t+wame niuki yarix+a, j+ta xe", "cbir_title": "Huichol Woman artisans", "cbir_description_en": "Huichol women wear their own jewelry to beautify themselves.", "cbir_image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Huichol%20Woman%20artisans.jpg?width=500", "cbir_score": "0.740", "cbir_band": "posible", "cbir_page_url": "https://commons.wikimedia.org/wiki/File:Huichol_Woman_artisans.jpg"}, {"sample_id": "S009", "language": "Wixárika", "image_filename": "hch_055.jpg", "image_src": "../../data/americasnlp2026/data/dev/wixarika/images/hch_055.jpg", "caption_A": "En Wirikuta, San Luis Potosí, México, se observa un entorno rural con una estructura de madera y un fuego en el centro, rodeado por árboles y vegetación.", "caption_B": "La imagen muestra un paisaje montañoso con vegetación densa y rocas, posiblemente relacionado con la cultura wixárika (huichol).", "english_A": "In Wirikuta, San Luis Potosí, Mexico, a rural setting is observed with a wooden structure and a fire in the center, surrounded by trees and vegetation.", "english_B": "The image shows a mountainous landscape with dense vegetation and rocks, possibly related to the Wixárika (Huichol) culture.", "target_A": "Wirikuta, San Luis Potosí, México, y+ni teiwari t+k+ t+x+kat+ h+x+ka y+x+ka k+xi+t+ni y+x+ka kutsi+t+ y+x+ka t+x+k+ta m+k+ y+x+ka t+x+k+ta y+x+ka t+x+k+ta y+x+ka t+x+k+ta y+x+ka t+x+k+ta y+x+ka t+x+", "target_B": "Yuuki taa'a'i xapa'a, t+'i xapa'a, t+'i xapa'a, m+k+ niukie t+'i xapa'a, t+'i xapa'a, t+'i xapa'a, t+'i xapa'a, t+'i xapa'a, t+'i xapa'a, t+'i xapa'a, t+'i xapa'a, t+'i xapa'a, t+'i xapa'a,", "cbir_title": "1 laureles Teokari", "cbir_description_en": "Tuki Of Don Jose Sandoval", "cbir_image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/1%20laureles%20Teokari.jpg?width=500", "cbir_score": "0.698", "cbir_band": "posible", "cbir_page_url": "https://commons.wikimedia.org/wiki/File:1_laureles_Teokari.jpg"}, {"sample_id": "S010", "language": "Nahuatl", "image_filename": "nlv_007.jpg", "image_src": "../../data/americasnlp2026/data/dev/nahuatl/images/nlv_007.jpg", "caption_A": "Un paisaje rural con plantas de maíz en primer plano y un cielo azul con algunas nubes, representando una escena cultural náhuatl en Michoacán, México.", "caption_B": "La imagen muestra un campo de cultivo verde con palmeras y otras plantas tropicales, rodeado por una cerca de madera y telas, posiblemente en una región tropical náhuatl.", "english_A": "A rural landscape with corn plants in the foreground and a blue sky with some clouds, depicting a Nahuatl [an indigenous people of Mexico and Central America] cultural scene in Michoacán, Mexico.", "english_B": "The image shows a green cultivated field with palm trees and other tropical plants, surrounded by a wooden and fabric fence, possibly in a tropical Nahuatl region.", "target_A": "Ce tlalxochitl tlatlalpan ihuicpa elotl xochimeh ipan achto tlalli huan ce xoxouhqui ilhuicatl ihuan cequi mixtli, tlatemachtli ce Nahuatl tlachializtli ipan Michoacán, Mexico.", "target_B": "Ce cuauhtlalpan tlalchi, cuauhtlatlapalli ihuicpa palma cuahuitl huan occequintin xochicuahuitl tlalchi, cuauhtlatlapalli ihuicpa cuauhtlapalli huan tilmahtli, zannen Nahuatl tlalli.", "cbir_title": "20260614 lago texcoco", "cbir_description_en": "Texcoco Lake 2026", "cbir_image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/20260614%20lago%20texcoco.jpg?width=500", "cbir_score": "0.724", "cbir_band": "posible", "cbir_page_url": "https://commons.wikimedia.org/wiki/File:20260614_lago_texcoco.jpg"}, {"sample_id": "S011", "language": "Nahuatl", "image_filename": "nlv_010.jpg", "image_src": "../../data/americasnlp2026/data/dev/nahuatl/images/nlv_010.jpg", "caption_A": "La imagen muestra una rama con flores amarillas y hojas verdes, posiblemente en un entorno natural, sin evidencia de relaciones sociales o culturales específicas.", "caption_B": "La imagen muestra una planta con flores amarillas y hojas verdes, posiblemente una especie de hierba o arbórea, en un entorno rural o semi-rural.", "english_A": "The image shows a branch with yellow flowers and green leaves, possibly in a natural setting, with no evidence of specific social or cultural relationships.", "english_B": "The image shows a plant with yellow flowers and green leaves, possibly a type of herbaceous or arboreal species, in a rural or semi-rural setting.", "target_A": "Ce cuahuitl xochimeh cospialtiqueh ihuan xoxocqueh izhuatl, achi hueli itech ce tlalxoxocotla, ahmo tlatztohua itech ce tlamantli tlanehneuhcayotl tlacameh nozo tlaxochimeh.", "target_B": "Ce xochicuahuitl coztic xochiyo uan cuacuahuitl xoxocuauhyo, ahmoyuhqui ce cuauhtlahuacatl nozo ce tlamantli cuahuitl, itech ce altepemaitl nozo ce tlamantli altepemaitl.", "cbir_title": "Piramide Nahua - panoramio", "cbir_description_en": "Nahua Pyramid", "cbir_image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Piramide%20Nahua%20-%20panoramio.jpg?width=500", "cbir_score": "0.651", "cbir_band": "posible", "cbir_page_url": "https://commons.wikimedia.org/wiki/File:Piramide_Nahua_-_panoramio.jpg"}, {"sample_id": "S012", "language": "Nahuatl", "image_filename": "nlv_018.jpg", "image_src": "../../data/americasnlp2026/data/dev/nahuatl/images/nlv_018.jpg", "caption_A": "Una niña nahua de Orizaba, Veracruz, prepara algo en un recipiente de barro mientras realiza una actividad cotidiana en su hogar.", "caption_B": "Una mujer trabaja en un taller de trabajo, utilizando materiales tradicionales, posiblemente relacionados con la fabricación de objetos o artesanales.", "english_A": "A Nahua girl from Orizaba, Veracruz, prepares something in a clay pot while performing a daily activity in her home.", "english_B": "A woman works in a workshop, using traditional materials, possibly related to the manufacture of objects or crafts.", "target_A": "Se tlakatl Orizaba, Veracruz, kichiwa se tlamantli itech se komitl pampa kichiwa se tlamantli ipan ichan.", "target_B": "Ce cihuatl tlen quipiya hueyi tlamachtilistli quichihua itequiuh ipan ce tlahcuilolli tlatzintli, quihuiquilia tlamantli tlen achto ipan inin altepetl, hueliz quichihua tlamantli nozo tlatequipanolli.", "cbir_title": "Ritual de agradecimiento", "cbir_description_en": "The Nahuas of the Municipality of Pajapan, in the State of Veracruz, Mexico, carry out a ritual of gratitude to Mother Earth every year for the blessings received during a cycle and offer prayers to the four cardinal points. They are represented in a circle with the harvest obtained from the", "cbir_image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Ritual%20de%20agradecimiento.jpg?width=500", "cbir_score": "0.672", "cbir_band": "posible", "cbir_page_url": "https://commons.wikimedia.org/wiki/File:Ritual_de_agradecimiento.jpg"}, {"sample_id": "S013", "language": "Bribri", "image_filename": "bzd_035.jpg", "image_src": "../../data/americasnlp2026/data/dev/bribri/images/bzd_035.jpg", "caption_A": "La imagen muestra una estructura tradicional de techo de paja con paredes de madera, típica de las comunidades bribri y usure de Costa Rica, en un entorno rural con selva tropical.", "caption_B": "La imagen muestra un palenque tradicional de la cultura bribri en Costa Rica, en Talamanca, con techo de paja y paredes de madera, rodeado por una densa vegetación tropical.", "english_A": "The image shows a traditional thatched-roof structure with wooden walls, typical of the Bribri and Usure communities of Costa Rica, in a rural setting with tropical rainforest.", "english_B": "The image shows a traditional palenque [a type of longhouse] of the Bribri culture in Costa Rica, in Talamanca, with a thatched roof and wooden walls, surrounded by dense tropical vegetation.", "target_A": "Ká shurí a̱tö́kölö ye'ë, tsëkë wö́tkapa ke' waköblö, Bribri tö́kölepa, usure tö́kölepa, Costa Rica ke' tö́kölepa, waköblö, tsëkë wö́tkapa ke' waköblö.", "target_B": "Se̱kë́kö́ bribri a̱kölö́ tö́ íkö́ tlö́kölö́ Talamancaká, Costa Ricaká, kàlòkölö́ tö́ wé̱kölö́ íkö́ si̱kàkà, é̱wäkölö́ tö́ íkö́ díkàkà tso̱kölö́.", "cbir_title": "Palenque bribri. Costa Rica", "cbir_description_en": "Bribri palenque [traditional indigenous longhouse] in Talamanca, Limón. Costa Rica.", "cbir_image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Palenque%20bribri.%20Costa%20Rica.jpg?width=500", "cbir_score": "0.781", "cbir_band": "posible", "cbir_page_url": "https://commons.wikimedia.org/wiki/File:Palenque_bribri._Costa_Rica.jpg"}, {"sample_id": "S014", "language": "Bribri", "image_filename": "bzd_040.jpg", "image_src": "../../data/americasnlp2026/data/dev/bribri/images/bzd_040.jpg", "caption_A": "El mapa de Costa Rica muestra diferentes grupos indígenas etiquetados en colores, incluyendo los bribri y otros grupos indígenas, con su ubicación geográfica.", "caption_B": "La imagen muestra un mapa de Costa Rica, específicamente de los territorios indígenas bribri, con una representación gráfica de los territorios bribri en diferentes colores.", "english_A": "The map of Costa Rica shows different indigenous groups labeled in colors, including the Bribri and other indigenous groups, with their geographical location.", "english_B": "The image shows a map of Costa Rica, specifically of the Bribri indigenous territories, with a graphic representation of the Bribri territories in different colors.", "target_A": "Costa Rica ena wëmkata takëpa e'pa tso'kölö bribri tanö e'pa tso'kölö ena, icha a'ttö ena takëpa.", "target_B": "Káklö Costa Rica wö́, kéköl bribri wö́, kéköl bribri tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë tö́lë", "cbir_title": "Costa-rica bribri", "cbir_description_en": "Map of the Bribri communities of Costa Rica. Author: Sergio Arroyo (Ornitorrinco) All rights released", "cbir_image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Costa-rica%20bribri.png?width=500", "cbir_score": "0.619", "cbir_band": "posible", "cbir_page_url": "https://commons.wikimedia.org/wiki/File:Costa-rica_bribri.png"}, {"sample_id": "S015", "language": "Bribri", "image_filename": "bzd_042.JPG", "image_src": "../../data/americasnlp2026/data/dev/bribri/images/bzd_042.JPG", "caption_A": "En Yorkín, Costa Rica, se observa un recipiente circular de madera y metal, probablemente de plata o cerámica, junto con una estructura de madera y metal en el centro de un entorno rural y natural.", "caption_B": "En una escena rural de la cultura bribri, se observa un recipiente de cacao y un horno de leña, rodeado de vegetación densa y verde, reflejando la tradición artesanal y la vida cotidiana de la comunidad", "english_A": "In Yorkín, Costa Rica, a circular wooden and metal container, probably made of silver or ceramic, is observed, along with a wooden and metal structure in the center of a rural and natural environment.", "english_B": "In a rural scene of Bribri culture, a cocoa container and a wood-fired oven are observed, surrounded by dense green vegetation, reflecting the artisanal tradition and daily life of the community.", "target_A": "Ye'pa Yorkín, Costa Rica, e'pa kʷi talamanka kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷi kʷ", "target_B": "Yëri waköla wö́ kàlëpa ie'pa, kàlëpa ka̱yö ie'pa, kàlëpa tö́rölö ie'pa, kàlëpa kaba ie'pa, kàlëpa kashka ie'pa, kàlëpa kasha ie'pa, kàlëpa kaba ie'pa, kàlëpa kashka ie'pa, kàlëpa kasha ie'pa, kàlëpa kaba ie'pa, kàlë", "cbir_title": "Cahuita tree 3", "cbir_description_en": "cahuita tree", "cbir_image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Cahuita%20tree%203.jpg?width=500", "cbir_score": "0.630", "cbir_band": "posible", "cbir_page_url": "https://commons.wikimedia.org/wiki/File:Cahuita_tree_3.jpg"}];
+const DIMS = [["cultural_accuracy", "Cultural accuracy", ["0 — wrong/absent: culturally generic, or names the wrong culture", "1 — partial: right gist but vague, or mixes correct + incorrect detail", "2 — accurate: correct culturally specific content, right terms"]], ["faithfulness", "Image faithfulness", ["0 — contradicts the image / hallucinates major content", "1 — mostly right, one notable wrong or missing element", "2 — faithful to the salient content"]], ["fluency", "Fluency (content coherence — see rubric's pivot caveat)", ["0 — broken: repetition loops, truncation, incoherent", "1 — understandable but awkward or confused", "2 — natural and coherent"]]];
+const CBIR_DIM = ["cbir_relevance", "Is the retrieved reference actually related to this image?", ["0 — unrelated: wrong subject/culture, retrieval clearly failed", "1 — partially related: same culture or general theme, wrong specific subject", "2 — clearly related: same or closely matching subject"]];
+let annotator = "";
+let idx = 0;
+
+const key = (sid) => `cicil_eval::${annotator}::${sid}`;
+const load = (sid) => JSON.parse(localStorage.getItem(key(sid)) || "{}");
+const save = (sid, obj) => localStorage.setItem(key(sid), JSON.stringify(obj));
+
+function start() {
+  annotator = document.getElementById("annotator").value.trim();
+  if (!annotator) { alert("Please enter your name first."); return; }
+  document.getElementById("gate").style.display = "none";
+  document.getElementById("app").style.display = "";
+  render();
+}
+
+function setField(sid, field, value) {
+  const cur = load(sid); cur[field] = value; save(sid, cur);
+  document.getElementById("status").innerHTML = statusLine();
+}
+
+function isComplete(sid) {
+  const it = ITEMS.find(i => i.sample_id === sid);
+  const r = load(sid);
+  const dimsDone = DIMS.every(d => r["A_" + d[0]] !== undefined && r["B_" + d[0]] !== undefined)
+                   && r["preference_A_B_tie"] !== undefined;
+  const cbirDone = !it.cbir_title || r[CBIR_DIM[0]] !== undefined;
+  return dimsDone && cbirDone;
+}
+
+function statusLine() {
+  const done = ITEMS.filter(it => isComplete(it.sample_id)).length;
+  return `<span class="${done === ITEMS.length ? "done" : "todo"}">${done}/${ITEMS.length} items fully scored</span>`;
+}
+
+function dimBlock(slot, sid, saved) {
+  return DIMS.map(([dkey, dname, anchors]) => {
+    const field = slot + "_" + dkey;
+    const opts = anchors.map((a, v) =>
+      `<label><input type="radio" name="${field}" ${saved[field] == v ? "checked" : ""}
+        onchange="setField('${sid}','${field}',${v})"> ${a}</label>`).join("");
+    return `<div class="dim"><b>${dname}</b>${opts}</div>`;
+  }).join("");
+}
+
+function esc(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function refBlock(it, sid, saved) {
+  if (!it.cbir_title) return "";
+  const [dkey, dname, anchors] = CBIR_DIM;
+  const opts = anchors.map((a, v) =>
+    `<label><input type="radio" name="${dkey}" ${saved[dkey] == v ? "checked" : ""}
+      onchange="setField('${sid}','${dkey}',${v})"> ${a}</label>`).join("");
+  const link = it.cbir_page_url
+    ? `<a href="${it.cbir_page_url}" target="_blank" rel="noopener">open on Wikimedia Commons &rarr;</a>`
+    : "(no source link recorded)";
+  // Live hotlink to Commons' own CDN (Special:FilePath) -- not a copy stored
+  // in this repo, same as how Wikipedia itself embeds Commons media. Needs an
+  // internet connection to render; falls back to the text+link if it 404s.
+  const img = it.cbir_image_url
+    ? `<img class="eval" style="max-height:280px" src="${it.cbir_image_url}"
+         onerror="this.outerHTML='<p class=warn>Preview failed to load (offline, or the file moved on Commons) — use the link below instead.</p>'">`
+    : "";
+  return `
+    <div class="arm">
+      <h2>Retrieved reference (what the RAG arms were given as context)</h2>
+      ${img}
+      <div class="cap cap-tg">
+        <span class="lbl">Commons title &middot; match strength: ${it.cbir_band} (score ${it.cbir_score})</span>
+        ${esc(it.cbir_title)}<br>${esc(it.cbir_description_en || "")}
+      </div>
+      <p>${link} — compare it to the image above.</p>
+      <div class="dim"><b>${dname}</b>${opts}</div>
+    </div>`;
+}
+
+function render() {
+  const it = ITEMS[idx];
+  const sid = it.sample_id;
+  const saved = load(sid);
+  const capBlock = (slot) => `
+    <div class="arm"><h2>Caption ${slot}</h2>
+      <div class="cap cap-en"><span class="lbl">English (judge this meaning)</span>${esc(it["english_" + slot])}</div>
+      <div class="cap cap-es"><span class="lbl">Spanish (Stage 1 output)</span>${esc(it["caption_" + slot])}</div>
+      <div class="cap cap-tg"><span class="lbl">${it.language} caption (Stage 2 output — display only, not judged)</span>${esc(it["target_" + slot])}</div>
+      ${dimBlock(slot, sid, saved)}
+    </div>`;
+  const pref = ["A", "B", "tie"].map(v =>
+    `<label style="display:inline-block;margin-right:16px"><input type="radio" name="pref"
+      ${saved["preference_A_B_tie"] === v ? "checked" : ""}
+      onchange="setField('${sid}','preference_A_B_tie','${v}')"> ${v}</label>`).join("");
+  document.getElementById("app").innerHTML = `
+    <div class="card nav">
+      <button onclick="go(-1)" ${idx === 0 ? "disabled" : ""}>&larr; Prev</button>
+      <span class="progress">Item ${idx + 1}/${ITEMS.length} &nbsp;·&nbsp; ${sid} (${it.language}) &nbsp;·&nbsp; <span id="status">${statusLine()}</span></span>
+      <button onclick="go(1)" ${idx === ITEMS.length - 1 ? "disabled" : ""}>Next &rarr;</button>
+    </div>
+    <div class="card">
+      <img class="eval" src="${it.image_src}"
+           onerror="this.outerHTML='<div class=imgerr>Image not found at <code>${it.image_src}</code>.<br>The dataset must be checked out at <code>data/americasnlp2026/</code> in this repo (it is gitignored — download it separately).</div>'">
+      ${it.gold_english ? `<div class="cap cap-gold"><span class="lbl">Gold reference (real human-written caption — for fact-checking; do not score)</span>${esc(it.gold_english)}</div>` : ""}
+    </div>
+    <div class="card">
+      ${refBlock(it, sid, saved)}
+      ${capBlock("A")}
+      ${capBlock("B")}
+      <div class="arm"><h2>Preference — better overall description of this image</h2>${pref}</div>
+      <div class="arm"><h2>Notes (cultural errors, hallucinations, category hits/misses)</h2>
+        <textarea onchange="setField('${sid}','notes',this.value)">${esc(saved["notes"] || "")}</textarea></div>
+    </div>
+    <div class="card nav">
+      <span>Autosaves locally as you go (per annotator name).</span>
+      <span>
+        <button onclick="showCSV()">Show CSV (copy manually)</button>
+        <button class="primary" onclick="exportCSV()">Export results CSV</button>
+      </span>
+    </div>
+    <div class="card" id="csvbox" style="display:none">
+      <h2>Results CSV — select all &amp; copy, then save as <code>results/human_eval_results_&lt;name&gt;_round2.csv</code></h2>
+      <p>Use this if the download button does nothing (e.g. VSCode's integrated browser
+      can't download files).</p>
+      <textarea id="csvtext" style="min-height:180px" onclick="this.select()"></textarea>
+    </div>`;
+}
+
+function go(delta) { idx = Math.max(0, Math.min(ITEMS.length - 1, idx + delta)); render(); }
+
+function csvQuote(v) {
+  v = String(v ?? "");
+  return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+}
+
+function buildCSV() {
+  const cols = ["annotator", "sample_id", "language",
+                ...DIMS.flatMap(d => ["A_" + d[0], "B_" + d[0]]),
+                "preference_A_B_tie", CBIR_DIM[0], "notes"];
+  const lines = [cols.join(",")];
+  for (const it of ITEMS) {
+    const r = load(it.sample_id);
+    lines.push(cols.map(c =>
+      csvQuote(c === "annotator" ? annotator :
+               c === "sample_id" ? it.sample_id :
+               c === "language" ? it.language : r[c])).join(","));
+  }
+  return lines.join("\n") + "\n";
+}
+
+function confirmComplete() {
+  const incomplete = ITEMS.filter(it => !isComplete(it.sample_id)).map(it => it.sample_id);
+  return !incomplete.length ||
+         confirm("Not fully scored yet: " + incomplete.join(", ") + "\nExport anyway?");
+}
+
+function showCSV() {
+  if (!confirmComplete()) return;
+  const box = document.getElementById("csvbox");
+  box.style.display = "";
+  document.getElementById("csvtext").value = buildCSV();
+  box.scrollIntoView();
+}
+
+function exportCSV() {
+  if (!confirmComplete()) return;
+  const blob = new Blob([buildCSV()], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `human_eval_results_${annotator.replace(/\s+/g, "_")}_round2.csv`;
+  a.click();
+  alert("If no file downloaded (VSCode's browser can't), use 'Show CSV' and copy it " +
+        "manually. Either way the file belongs in analysis/human_eval/results/.");
+}
+</script>
+</body>
+</html>

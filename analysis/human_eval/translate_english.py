@@ -100,7 +100,13 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Translate the human-eval sample ES→EN.")
     ap.add_argument("--limit", type=int, default=None,
                     help="Only translate the first N rows (smoke test).")
+    ap.add_argument("--suffix", default="",
+                    help="round suffix (e.g. _round2): reads sample_spanish"
+                         "{suffix}.csv, writes sample_english{suffix}.csv")
     args = ap.parse_args()
+    global IN_FILE, OUT_FILE
+    IN_FILE = HERE / f"sample_spanish{args.suffix}.csv"
+    OUT_FILE = HERE / f"sample_english{args.suffix}.csv"
 
     ensure_vertex_credentials()
     print(f"Vertex AI: project={VERTEX_PROJECT} location={VERTEX_LOCATION} "
@@ -111,6 +117,21 @@ def main() -> None:
     if args.limit is not None:
         rows = rows[: args.limit]
 
+    # Optional: this round's CBIR retrieval reference (build_cbir_refs.py). Its
+    # description (Commons metadata -- often Spanish, sometimes already
+    # English) gets the same translate() call for a consistent annotator view.
+    cbir_path = HERE / f"sample_cbir_ref{args.suffix}.csv"
+    cbir_by_id: dict[str, dict] = {}
+    if cbir_path.exists():
+        with cbir_path.open(encoding="utf-8") as f:
+            cbir_by_id = {r["sample_id"]: r for r in csv.DictReader(f)}
+        print(f"Found {cbir_path.name} -- will also translate cbir_description")
+
+    has_gold = rows and "gold_spanish" in rows[0]
+    if has_gold:
+        print("sample_spanish has gold_spanish -- will also translate it "
+              "(round 3: real pilot ground truth)")
+
     out_rows = []
     for i, row in enumerate(rows, 1):
         sid = row["sample_id"]
@@ -119,11 +140,25 @@ def main() -> None:
         time.sleep(API_PAUSE)
         english_b = translate(row["caption_B"])
         time.sleep(API_PAUSE)
-        out_rows.append({"sample_id": sid, "english_A": english_a,
-                         "english_B": english_b})
+        out_row = {"sample_id": sid, "english_A": english_a, "english_B": english_b}
+        cbir_row = cbir_by_id.get(sid)
+        if cbir_row is not None:
+            desc = cbir_row.get("cbir_description", "").strip()
+            out_row["cbir_description_en"] = translate(desc) if desc else ""
+            time.sleep(API_PAUSE)
+        if has_gold:
+            gold = row.get("gold_spanish", "").strip()
+            out_row["gold_english"] = translate(gold) if gold else ""
+            time.sleep(API_PAUSE)
+        out_rows.append(out_row)
 
+    fieldnames = ["sample_id", "english_A", "english_B"]
+    if has_gold:
+        fieldnames.append("gold_english")
+    if cbir_by_id:
+        fieldnames.append("cbir_description_en")
     with OUT_FILE.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["sample_id", "english_A", "english_B"])
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(out_rows)
     print(f"Wrote {len(out_rows)} rows -> {OUT_FILE}")

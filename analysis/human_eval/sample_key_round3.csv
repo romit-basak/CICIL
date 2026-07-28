@@ -1,0 +1,21 @@
+sample_id,language,image_id,image_filename,slot_A_arm,slot_B_arm,categories_present
+S001,Wixárika,hch_001,hch_001.jpg,smolvlm-ragdistill,smolvlm-rag,Ceremony; Landscape; Material culture
+S002,Wixárika,hch_002,hch_002.jpg,smolvlm-rag,smolvlm-ragdistill,Kinship; Landscape
+S003,Wixárika,hch_003,hch_003.jpg,smolvlm-rag,smolvlm-ragdistill,Ceremony; Kinship; Landscape; Material culture
+S004,Wixárika,hch_004,hch_004.jpg,smolvlm-rag,smolvlm-ragdistill,Kinship; Landscape; Material culture
+S005,Wixárika,hch_005,hch_005.jpg,smolvlm-ragdistill,smolvlm-rag,Ceremony; Kinship; Landscape
+S006,Wixárika,hch_006,hch_006.jpg,smolvlm-ragdistill,smolvlm-rag,Ceremony; Landscape
+S007,Wixárika,hch_007,hch_007.jpg,smolvlm-rag,smolvlm-ragdistill,Ceremony; Kinship; Landscape; Material culture
+S008,Wixárika,hch_008,hch_008.jpg,smolvlm-ragdistill,smolvlm-rag,Kinship; Landscape; Material culture
+S009,Wixárika,hch_009,hch_009.jpg,smolvlm-ragdistill,smolvlm-rag,Ceremony; Kinship; Landscape; Material culture
+S010,Wixárika,hch_010,hch_010.jpg,smolvlm-rag,smolvlm-ragdistill,Ceremony; Landscape; Material culture
+S011,Wixárika,hch_011,hch_011.jpg,smolvlm-rag,smolvlm-ragdistill,Ceremony; Landscape; Material culture
+S012,Wixárika,hch_012,hch_012.jpg,smolvlm-rag,smolvlm-ragdistill,Ceremony; Kinship; Landscape; Material culture
+S013,Wixárika,hch_013,hch_013.jpg,smolvlm-rag,smolvlm-ragdistill,Kinship; Landscape; Material culture
+S014,Wixárika,hch_014,hch_014.jpg,smolvlm-rag,smolvlm-ragdistill,Kinship; Landscape; Material culture
+S015,Wixárika,hch_015,hch_015.jpg,smolvlm-rag,smolvlm-ragdistill,Kinship; Landscape
+S016,Wixárika,hch_016,hch_016.jpg,smolvlm-ragdistill,smolvlm-rag,Kinship; Landscape; Material culture
+S017,Wixárika,hch_017,hch_017.jpg,smolvlm-ragdistill,smolvlm-rag,Kinship; Landscape; Material culture
+S018,Wixárika,hch_018,hch_018.jpg,smolvlm-rag,smolvlm-ragdistill,Kinship; Landscape; Material culture
+S019,Wixárika,hch_019,hch_019.jpg,smolvlm-ragdistill,smolvlm-rag,Landscape; Material culture
+S020,Wixárika,hch_020,hch_020.jpg,smolvlm-rag,smolvlm-ragdistill,Kinship; Landscape; Material culture

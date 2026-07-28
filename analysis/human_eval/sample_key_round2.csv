@@ -1,0 +1,16 @@
+sample_id,language,image_id,image_filename,slot_A_arm,slot_B_arm,categories_present
+S001,Guaraní,grn_019,grn_019.jpg,smolvlm-rag,smolvlm-ragdistill,Ceremony; Material culture
+S002,Guaraní,grn_023,grn_023.jpg,smolvlm-rag,smolvlm-ragdistill,Ceremony; Landscape; Material culture
+S003,Guaraní,grn_025,grn_025.jpg,smolvlm-ragdistill,smolvlm-rag,Ceremony; Kinship; Landscape; Material culture
+S004,Yucatec Maya,yua_001,yua_001.jpg,smolvlm-rag,smolvlm-ragdistill,Ceremony; Landscape; Material culture
+S005,Yucatec Maya,yua_029,yua_029.jpg,smolvlm-ragdistill,smolvlm-rag,Landscape; Material culture
+S006,Yucatec Maya,yua_035,yua_035.jpg,smolvlm-ragdistill,smolvlm-rag,Kinship; Landscape; Material culture
+S007,Wixárika,hch_021,hch_021.jpg,smolvlm-rag,smolvlm-ragdistill,Ceremony; Landscape; Material culture
+S008,Wixárika,hch_051,hch_051.jpg,smolvlm-ragdistill,smolvlm-rag,Kinship; Landscape; Material culture
+S009,Wixárika,hch_055,hch_055.jpg,smolvlm-rag,smolvlm-ragdistill,Ceremony; Landscape; Material culture
+S010,Nahuatl,nlv_007,nlv_007.jpg,smolvlm-rag,smolvlm-ragdistill,Landscape; Material culture
+S011,Nahuatl,nlv_010,nlv_010.jpg,smolvlm-ragdistill,smolvlm-rag,Ceremony; Landscape; Material culture
+S012,Nahuatl,nlv_018,nlv_018.jpg,smolvlm-rag,smolvlm-ragdistill,Ceremony; Kinship; Landscape; Material culture
+S013,Bribri,bzd_035,bzd_035.jpg,smolvlm-ragdistill,smolvlm-rag,Ceremony; Kinship; Landscape; Material culture
+S014,Bribri,bzd_040,bzd_040.jpg,smolvlm-ragdistill,smolvlm-rag,Ceremony; Landscape; Material culture
+S015,Bribri,bzd_042,bzd_042.JPG,smolvlm-rag,smolvlm-ragdistill,Landscape; Material culture

@@ -19,24 +19,25 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-OUT_FILE = HERE / "human_eval.html"
+OUT_FILE = HERE / "human_eval.html"  # reassigned by --suffix in main()
 
 # image-id prefix -> dataset language directory
 LANG_DIR = {"grn": "guarani", "yua": "maya", "hch": "wixarika",
             "nlv": "nahuatl", "bzd": "bribri"}
 
 
-def load_items() -> list[dict]:
+def load_items(suffix: str = "", split: str = "dev") -> list[dict]:
     def by_id(path: Path) -> dict[str, dict]:
         with path.open(encoding="utf-8") as f:
             return {r["sample_id"]: r for r in csv.DictReader(f)}
 
-    spanish = by_id(HERE / "sample_spanish.csv")
-    english = by_id(HERE / "sample_english.csv")
-    target = by_id(HERE / "sample_target.csv")
+    spanish = by_id(HERE / f"sample_spanish{suffix}.csv")
+    english = by_id(HERE / f"sample_english{suffix}.csv")
+    target = by_id(HERE / f"sample_target{suffix}.csv")
 
     missing = sorted(set(spanish) - set(english))
     if missing:
@@ -45,23 +46,60 @@ def load_items() -> list[dict]:
             f"translate_english.py first."
         )
 
+    # Optional: this round's CBIR retrieval reference (build_cbir_refs.py).
+    # Present only for rounds comparing RAG arms; absent (e.g. round 1) is
+    # fine -- the reference block and its rating question are simply omitted.
+    cbir_path = HERE / f"sample_cbir_ref{suffix}.csv"
+    cbir = by_id(cbir_path) if cbir_path.exists() else {}
+
+    # Resolve image paths via the same basename-lookup data_io.py uses
+    # everywhere else, rather than hand-building a path template: dev and
+    # pilot use DIFFERENT on-disk layouts (dev: <lang>/images/, pilot:
+    # images/<lang>/) and a hardcoded template silently pointed at the wrong
+    # one for round 3 (pilot). One shared resolver means this can't drift again.
+    from src.stage1.data_io import load_split
+    paths_cache: dict[str, dict[str, Path]] = {}
+
+    def resolve_image_src(fname: str, lang_dir: str) -> str:
+        if lang_dir not in paths_cache:
+            paths_cache[lang_dir] = {ex.image_path.name: ex.image_path
+                                     for ex in load_split(lang_dir, split)}
+        abs_path = paths_cache[lang_dir].get(fname)
+        if abs_path is None:
+            # Fall back to a guessed path so the browser's onerror message is
+            # still informative about what was looked for.
+            return f"../../data/americasnlp2026/data/{split}/{lang_dir}/images/{fname}"
+        return os.path.relpath(abs_path, start=HERE)
+
     items = []
     for sid, row in spanish.items():
         fname = row["image_filename"]  # keep exact case (bzd_042.JPG)
         prefix = fname.split("_")[0]
         lang_dir = LANG_DIR[prefix]
-        items.append({
+        item = {
             "sample_id": sid,
             "language": row["language"],
             "image_filename": fname,
-            "image_src": f"../../data/americasnlp2026/data/dev/{lang_dir}/images/{fname}",
+            "image_src": resolve_image_src(fname, lang_dir),
             "caption_A": row["caption_A"],
             "caption_B": row["caption_B"],
             "english_A": english[sid]["english_A"],
             "english_B": english[sid]["english_B"],
             "target_A": target[sid]["caption_A"],
             "target_B": target[sid]["caption_B"],
-        })
+        }
+        c = cbir.get(sid)
+        if c and c.get("cbir_title"):
+            item["cbir_title"] = c["cbir_title"]
+            item["cbir_description_en"] = english[sid].get("cbir_description_en", "")
+            item["cbir_image_url"] = c.get("cbir_image_url", "")
+            item["cbir_score"] = c.get("cbir_score", "")
+            item["cbir_band"] = c.get("cbir_band", "")
+            item["cbir_page_url"] = c.get("cbir_page_url", "")
+        gold_en = english[sid].get("gold_english", "")
+        if gold_en:
+            item["gold_english"] = gold_en
+        items.append(item)
     items.sort(key=lambda r: r["sample_id"])
     return items
 
@@ -81,6 +119,15 @@ DIMENSIONS = [
       "2 — natural and coherent"]),
 ]
 
+# Scored ONCE per item, not per A/B slot: retrieval happens once per image
+# regardless of which two captions are being compared (both RAG arms in a
+# round see the identical CBIR neighbor). Only shown when sample_cbir_ref*.csv
+# exists (see build_cbir_refs.py) -- absent for rounds with no RAG arm.
+CBIR_DIMENSION = ("cbir_relevance", "Is the retrieved reference actually related to this image?",
+                  ["0 — unrelated: wrong subject/culture, retrieval clearly failed",
+                   "1 — partially related: same culture or general theme, wrong specific subject",
+                   "2 — clearly related: same or closely matching subject"])
+
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -97,6 +144,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .cap-es {{ background: #f8fafc; border: 1px solid #e2e8f0; }}
   .cap-en {{ background: #eff6ff; border: 1px solid #bfdbfe; }}
   .cap-tg {{ background: #fafaf9; border: 1px dashed #d6d3d1; color: #78716c; font-size: .9rem; }}
+  .cap-gold {{ background: #fefce8; border: 1px solid #fde047; font-weight: 500; }}
   .lbl {{ font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: #64748b; display: block; margin-bottom: 3px; }}
   .dim {{ margin: 8px 0 12px; }}
   .dim b {{ display: block; margin-bottom: 4px; }}
@@ -129,6 +177,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <script>
 const ITEMS = {items_json};
 const DIMS = {dims_json};
+const CBIR_DIM = {cbir_dim_json};
 let annotator = "";
 let idx = 0;
 
@@ -150,9 +199,12 @@ function setField(sid, field, value) {{
 }}
 
 function isComplete(sid) {{
+  const it = ITEMS.find(i => i.sample_id === sid);
   const r = load(sid);
-  return DIMS.every(d => r["A_" + d[0]] !== undefined && r["B_" + d[0]] !== undefined)
-         && r["preference_A_B_tie"] !== undefined;
+  const dimsDone = DIMS.every(d => r["A_" + d[0]] !== undefined && r["B_" + d[0]] !== undefined)
+                   && r["preference_A_B_tie"] !== undefined;
+  const cbirDone = !it.cbir_title || r[CBIR_DIM[0]] !== undefined;
+  return dimsDone && cbirDone;
 }}
 
 function statusLine() {{
@@ -172,6 +224,35 @@ function dimBlock(slot, sid, saved) {{
 
 function esc(s) {{
   return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}}
+
+function refBlock(it, sid, saved) {{
+  if (!it.cbir_title) return "";
+  const [dkey, dname, anchors] = CBIR_DIM;
+  const opts = anchors.map((a, v) =>
+    `<label><input type="radio" name="${{dkey}}" ${{saved[dkey] == v ? "checked" : ""}}
+      onchange="setField('${{sid}}','${{dkey}}',${{v}})"> ${{a}}</label>`).join("");
+  const link = it.cbir_page_url
+    ? `<a href="${{it.cbir_page_url}}" target="_blank" rel="noopener">open on Wikimedia Commons &rarr;</a>`
+    : "(no source link recorded)";
+  // Live hotlink to Commons' own CDN (Special:FilePath) -- not a copy stored
+  // in this repo, same as how Wikipedia itself embeds Commons media. Needs an
+  // internet connection to render; falls back to the text+link if it 404s.
+  const img = it.cbir_image_url
+    ? `<img class="eval" style="max-height:280px" src="${{it.cbir_image_url}}"
+         onerror="this.outerHTML='<p class=warn>Preview failed to load (offline, or the file moved on Commons) — use the link below instead.</p>'">`
+    : "";
+  return `
+    <div class="arm">
+      <h2>Retrieved reference (what the RAG arms were given as context)</h2>
+      ${{img}}
+      <div class="cap cap-tg">
+        <span class="lbl">Commons title &middot; match strength: ${{it.cbir_band}} (score ${{it.cbir_score}})</span>
+        ${{esc(it.cbir_title)}}<br>${{esc(it.cbir_description_en || "")}}
+      </div>
+      <p>${{link}} — compare it to the image above.</p>
+      <div class="dim"><b>${{dname}}</b>${{opts}}</div>
+    </div>`;
 }}
 
 function render() {{
@@ -198,8 +279,10 @@ function render() {{
     <div class="card">
       <img class="eval" src="${{it.image_src}}"
            onerror="this.outerHTML='<div class=imgerr>Image not found at <code>${{it.image_src}}</code>.<br>The dataset must be checked out at <code>data/americasnlp2026/</code> in this repo (it is gitignored — download it separately).</div>'">
+      ${{it.gold_english ? `<div class="cap cap-gold"><span class="lbl">Gold reference (real human-written caption — for fact-checking; do not score)</span>${{esc(it.gold_english)}}</div>` : ""}}
     </div>
     <div class="card">
+      ${{refBlock(it, sid, saved)}}
       ${{capBlock("A")}}
       ${{capBlock("B")}}
       <div class="arm"><h2>Preference — better overall description of this image</h2>${{pref}}</div>
@@ -214,7 +297,7 @@ function render() {{
       </span>
     </div>
     <div class="card" id="csvbox" style="display:none">
-      <h2>Results CSV — select all &amp; copy, then save as <code>results/human_eval_results_&lt;name&gt;.csv</code></h2>
+      <h2>Results CSV — select all &amp; copy, then save as <code>results/human_eval_results_&lt;name&gt;{round_suffix}.csv</code></h2>
       <p>Use this if the download button does nothing (e.g. VSCode's integrated browser
       can't download files).</p>
       <textarea id="csvtext" style="min-height:180px" onclick="this.select()"></textarea>
@@ -231,7 +314,7 @@ function csvQuote(v) {{
 function buildCSV() {{
   const cols = ["annotator", "sample_id", "language",
                 ...DIMS.flatMap(d => ["A_" + d[0], "B_" + d[0]]),
-                "preference_A_B_tie", "notes"];
+                "preference_A_B_tie", CBIR_DIM[0], "notes"];
   const lines = [cols.join(",")];
   for (const it of ITEMS) {{
     const r = load(it.sample_id);
@@ -262,7 +345,7 @@ function exportCSV() {{
   const blob = new Blob([buildCSV()], {{ type: "text/csv;charset=utf-8" }});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `human_eval_results_${{annotator.replace(/\\s+/g, "_")}}.csv`;
+  a.download = `human_eval_results_${{annotator.replace(/\\s+/g, "_")}}{round_suffix}.csv`;
   a.click();
   alert("If no file downloaded (VSCode's browser can't), use 'Show CSV' and copy it " +
         "manually. Either way the file belongs in analysis/human_eval/results/.");
@@ -274,13 +357,24 @@ function exportCSV() {{
 
 
 def main() -> None:
-    items = load_items()
+    import argparse
+    ap = argparse.ArgumentParser(description="Build the annotation HTML.")
+    ap.add_argument("--suffix", default="",
+                    help="round suffix (e.g. _round2): reads sample_*{suffix}.csv, "
+                         "writes human_eval{suffix}.html")
+    ap.add_argument("--split", default="dev", choices=["pilot", "dev", "test"],
+                    help="dataset split the images live under (pilot for round 3)")
+    args = ap.parse_args()
+    items = load_items(args.suffix, args.split)
     html = HTML_TEMPLATE.format(
         items_json=json.dumps(items, ensure_ascii=False),
         dims_json=json.dumps(DIMENSIONS, ensure_ascii=False),
+        cbir_dim_json=json.dumps(CBIR_DIMENSION, ensure_ascii=False),
+        round_suffix=args.suffix,
     )
-    OUT_FILE.write_text(html, encoding="utf-8")
-    print(f"Wrote {OUT_FILE} ({len(items)} items). Open it in a browser to annotate.")
+    out_file = HERE / f"human_eval{args.suffix}.html"
+    out_file.write_text(html, encoding="utf-8")
+    print(f"Wrote {out_file} ({len(items)} items). Open it in a browser to annotate.")
 
 
 if __name__ == "__main__":

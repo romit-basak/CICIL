@@ -295,16 +295,15 @@ though the task metadata says so. Recognizing a culture purely from pixels is an
 ill-posed problem (the same lace pattern exists on three continents) — the pipeline was
 withholding the one piece of information that disambiguates it.
 
-**Retrieval into Stage 1 fixed the naming problem — with one big caveat each way.**
-(The current work.) With both retrieval channels on, the rate at which the *same 2B
-student* names the culture jumped from ~2–14% to 36–92% across all five languages, and
-on the languages whose images show distinctive sites/artifacts it started naming the
-*specific* ones (Wirikuta for bare desert hills that every earlier arm called "no
-cultural content"; Cahuita and cacao for Bribri). The caveats: (1) ChrF++ barely moves
-— the reference captions can't reward naming they don't contain, so we measure this
-with term-rate audits and human spot checks instead; (2) retrieval can misattribute —
-the Paraguay-heavy Guaraní bank pulled an Argentine chamamé festival across the border,
-confidently.
+**Retrieval into Stage 1 fixed the naming problem — with caveats that turned out to run
+deeper than expected (see the next chapter).** (The current work.) With both retrieval
+channels on, the rate at which the *same 2B student* names the culture jumped from
+~2–14% to 36–92% across all five languages, and on some languages it started naming
+more specific things too (an artifact, a site) rather than just the broad culture. The
+first-pass caveats: (1) ChrF++ barely moves — the reference captions can't reward
+naming they don't contain, so we measure this with term-rate audits and human spot
+checks instead; (2) retrieval can misattribute — the Paraguay-heavy Guaraní bank pulled
+an Argentine chamamé festival across the border, confidently.
 
 **A capability gap we didn't expect: the small model can't hedge — and the fix
 worked, with a catch.** The retrieval prompts instruct the model to mark uncertain
@@ -316,10 +315,31 @@ outputs *with* the retrieval context in the training prompts (RAG-aware
 distillation) **did** fix it: the retrained student hedges at teacher-like rates in
 all five languages. The catch: it inherited the teacher's conservatism along with
 its caution — it now hedges the culture properly but stopped naming the specific
-sites and artifacts the un-retrained student had been (correctly, if overconfidently)
-naming. At 2B parameters, specificity and calibration appear to trade off; only the
-7B teacher holds both at once. That trade-off is itself one of the paper's cleanest
-findings.
+sites and artifacts the un-retrained student had been confidently naming (whether those
+names were actually *correct* is exactly what the next chapter checks). At 2B
+parameters, specificity and calibration appear to trade off; only the 7B teacher holds
+both at once. That trade-off is itself one of the paper's cleanest findings.
+
+**We went and checked our own best example, and it didn't hold up.** The single most
+citable "win" from the retrieval work was one image: a photo of bare desert hills that
+every prior arm had called "no cultural content," which the RAG arms confidently named
+as Wirikuta, the Wixárika's most sacred site. It got cited as proof that retrieval
+could ground sacred geography — until we actually downloaded the retrieved reference
+image and looked at it side by side with the real one, instead of trusting the
+retrieved caption's text. They are not the same kind of scene at all: the reference is
+a ceremonial gathering on a reflective salt flat; the real image is an empty rocky
+canyon with a river. The model hadn't recognized the place — it had copied the location
+straight out of the retrieved photo's own caption, the same shortcut that (separately)
+produced a confirmed-wrong answer on another image that day. The only reason this one
+looked like a win is that "Wirikuta" names a huge desert region rather than one
+specific building, so there was no equivalent of a visible sign or poster to catch it
+being wrong. Checking three more retrieved-image pairs by hand found the same pattern
+in most of them: coarse visual similarity (tone, terrain type) standing in for genuine
+recognition, passing every automatic check we'd built because those checks only read
+the *text* a caption produced, never the *image* the retrieval actually returned. The
+honest lesson: a retrieval system's failures can hide behind confident, plausible-
+sounding text unless someone occasionally goes and looks at the picture it retrieved,
+not just the caption it wrote down.
 
 ---
 
@@ -374,10 +394,15 @@ findings.
 - **The decoding fix is in** (temperature 0.7 + seed): Wixárika/Bribri degeneration is
   down by ~two-thirds and their scores up; all final numbers use this setting.
 - **Stage 1 retrieval is the current headline**: culture-naming went from near-zero to
-  the strong majority of captions across all five languages, with genuine site/artifact
-  grounding on the languages whose images support it, verified by audits and spot
-  checks rather than ChrF++ (which is blind to it). Its cost side (confident
-  misattribution by the small model) is measured, not hidden.
+  the strong majority of captions across all five languages, verified by audits and
+  spot checks rather than ChrF++ (which is blind to it). But spot-checking the actual
+  retrieved *images*, not just the text they produced, found most of the specific-site
+  naming (our flagship "Wirikuta" example included) is copied from coarsely-similar
+  retrieved photos rather than genuinely recognized — see the retraction chapter above.
+  Both this cost and the earlier misattribution cost are measured and reported, not
+  hidden — but the paper's claim for this part narrows to "names the given culture
+  confidently" rather than "grounds specific sites/artifacts," which is not
+  independently verified.
 - **In flight right now**: a RAG-aware re-distillation of the student (does calibration
   transfer from teacher to student?), the final all-language Stage 2 re-runs at the new
   decoding, and the merged results table. The team's Stage 2 sweep (retrieval-k and

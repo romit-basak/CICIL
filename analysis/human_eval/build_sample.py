@@ -92,12 +92,58 @@ def stratified_pick(records: list[dict], n: int, rng: random.Random) -> list[int
     return sorted(picked)
 
 
-def build(per_lang: int, seed: int) -> None:
+def build(per_lang: int, seed: int, arms: list[str] | None = None,
+          suffix: str = "") -> None:
+    """Default: the round-1 generic-vs-cultural ollama sample (fresh stratified
+    pick). With ``arms`` = two Stage-1 backend tags (e.g. smolvlm-rag
+    smolvlm-ragdistill): a follow-up round comparing those two cultural-vqa arms
+    on the SAME images as round 1 (ids reused from sample_key.csv, so rounds are
+    directly comparable), with fresh A/B blinding. ``suffix`` isolates the output
+    files (sample_spanish{suffix}.csv, ...) so round 1 stays untouched.
+    """
     rng = random.Random(seed)
     spanish_rows, target_rows, key_rows = [], [], []
     sample_n = 0
 
+    reuse_ids: dict[str, list[str]] = {}
+    if arms:
+        with (OUT_DIR / "sample_key.csv").open(encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                lang_code = {v: k for k, v in LANGS.items()}[row["language"]]
+                reuse_ids.setdefault(lang_code, []).append(row["image_id"])
+
     for lang in LANGS:
+        if arms:
+            tag_a, tag_b = arms
+            a_recs = _load_jsonl(OUTPUTS / f"{lang}_dev_cultural-vqa_{tag_a}.jsonl")
+            b_recs = _load_jsonl(OUTPUTS / f"{lang}_dev_cultural-vqa_{tag_b}.jsonl")
+            a_tgt = _load_preds(PREDICTIONS / f"{lang}_cultural-vqa_{tag_a}_k5_predictions.txt")
+            b_tgt = _load_preds(PREDICTIONS / f"{lang}_cultural-vqa_{tag_b}_k5_predictions.txt")
+            a_by_id = {r["id"]: (i, r) for i, r in enumerate(a_recs)}
+            b_by_id = {r["id"]: (i, r) for i, r in enumerate(b_recs)}
+            for iid in reuse_ids.get(lang, []):
+                ai, arec = a_by_id[iid]
+                bi, brec = b_by_id[iid]
+                sample_n += 1
+                sid = f"S{sample_n:03d}"
+                a_is_A = rng.random() < 0.5
+                arm_A, arm_B = (tag_a, tag_b) if a_is_A else (tag_b, tag_a)
+                es = {tag_a: arec.get("generated_spanish", ""),
+                      tag_b: brec.get("generated_spanish", "")}
+                tg = {tag_a: a_tgt[ai], tag_b: b_tgt[bi]}
+                common = {"sample_id": sid, "language": LANGS[lang],
+                          "image_filename": arec.get("filename", "")}
+                spanish_rows.append({**common, "caption_A": es[arm_A],
+                                     "caption_B": es[arm_B], **{c: "" for c in SCORE_COLS}})
+                target_rows.append({**common, "caption_A": tg[arm_A],
+                                    "caption_B": tg[arm_B], **{c: "" for c in SCORE_COLS}})
+                cats = sorted(CATEGORY_LABEL[c] for c in _present_set(arec))
+                key_rows.append({"sample_id": sid, "language": LANGS[lang],
+                                 "image_id": iid, "image_filename": arec.get("filename", ""),
+                                 "slot_A_arm": arm_A, "slot_B_arm": arm_B,
+                                 "categories_present": "; ".join(cats) or "(none detected)"})
+            continue
+
         gen_recs = _load_jsonl(OUTPUTS / f"{lang}_dev_generic_ollama.jsonl")
         cult_recs = _load_jsonl(OUTPUTS / f"{lang}_dev_cultural-vqa_ollama.jsonl")
         gen_tgt = _load_preds(PREDICTIONS / f"{lang}_generic_k5_predictions.txt")
@@ -135,13 +181,13 @@ def build(per_lang: int, seed: int) -> None:
                              "slot_A_arm": arm_A, "slot_B_arm": arm_B,
                              "categories_present": "; ".join(cats) or "(none detected)"})
 
-    _write(OUT_DIR / "sample_spanish.csv",
+    _write(OUT_DIR / f"sample_spanish{suffix}.csv",
            ["sample_id", "language", "image_filename", "caption_A", "caption_B", *SCORE_COLS],
            spanish_rows)
-    _write(OUT_DIR / "sample_target.csv",
+    _write(OUT_DIR / f"sample_target{suffix}.csv",
            ["sample_id", "language", "image_filename", "caption_A", "caption_B", *SCORE_COLS],
            target_rows)
-    _write(OUT_DIR / "sample_key.csv",
+    _write(OUT_DIR / f"sample_key{suffix}.csv",
            ["sample_id", "language", "image_id", "image_filename",
             "slot_A_arm", "slot_B_arm", "categories_present"],
            key_rows)
@@ -172,8 +218,16 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Build the human-eval sample.")
     ap.add_argument("--per-lang", type=int, default=3, help="images per language (x2 arms)")
     ap.add_argument("--seed", type=int, default=20260717, help="deterministic sampling seed")
+    ap.add_argument("--arms", nargs=2, default=None, metavar=("TAG_A", "TAG_B"),
+                    help="follow-up round: two Stage-1 backend tags (cultural-vqa) "
+                         "compared on the SAME images as round 1")
+    ap.add_argument("--suffix", default="",
+                    help="output filename suffix (e.g. _round2) so earlier rounds "
+                         "are not overwritten")
     args = ap.parse_args()
-    build(args.per_lang, args.seed)
+    if args.arms and not args.suffix:
+        ap.error("--arms requires --suffix (protects the round-1 files)")
+    build(args.per_lang, args.seed, arms=args.arms, suffix=args.suffix)
 
 
 if __name__ == "__main__":

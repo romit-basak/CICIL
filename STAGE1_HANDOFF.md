@@ -61,6 +61,31 @@ k=5, temp-0.7:
    holds both. This precision/recall trade on cultural specificity is a headline
    finding for the paper.
 
+⚠️ **CORRECTION (2026-07-28) — hch_021 ("Wirikuta") was NOT a verified grounding
+win; walk this back everywhere it's cited as one.** Manually fetched the actual
+top-1 CBIR neighbor image (score 0.67, "posible" — never "fuerte") and compared
+it directly against hch_021: the neighbor is a ceremonial-gathering photo on a
+reflective salt-flat/shallow-water surface with a crowd in ceremonial dress;
+hch_021 is an empty rocky canyon with a river, no people. Different scene types,
+sharing only coarse SigLIP-similarity features (earthy tones, rocky/hilly
+terrain, a water reflection). The "Wirikuta" claim is copied verbatim from the
+neighbor's OWN caption text ("Esta fotografía fue tomada en el desierto sagrado
+de Wirikuta..."), not independently recognized — identical mechanism to the
+confirmed-wrong grn_025 Itauguá case (§human-eval notes), except Wirikuta names
+a huge region rather than a specific town, so there is no visible counter-
+evidence (no dev geolocation field) to catch it either way. **We cannot confirm
+or deny the claim is true; we CAN confirm the retrieval provides no evidence for
+it.** The smolvlm-rag caption states it as flat, unhedged fact — the least
+epistemically justified version of any arm's output on this image.
+Implication for the concept-rate numbers above: "wirikuta" and "san luis
+potos[íi]" are both in `rag_pilot.py`'s wixárika CONCEPT regex, so some
+unknown fraction of wixárika's 24/50 (smolvlm-rag) and 8/50 (teacher) concept
+hits may be this same coarse-match-then-copy pattern rather than genuine
+recognition — broad, hard-to-falsify regional claims can pass automatic
+regex AND casual human spot-check in a way narrow claims (a named town) can't.
+State this as an explicit metric-validity limitation; do not present hch_021 as
+a clean win in the paper without this caveat attached.
+
 **For your sweep: nothing changes.** New backend tags are additive
 (`run_sweep --backend smolvlm-rag` etc. after a pull, per the locked plan).
 
@@ -99,12 +124,15 @@ not model scale, is the binding constraint on cultural naming.)
 - **Culture-term rate is the headline**: 14%→80% (Guaraní) and 4%→40% (Wixárika)
   for the same 2B student. ChrF++ stays flat — the established metric blindness:
   a single reference can't reward correct naming it doesn't contain.
-- **Audit wins**: hch_021 (bare hills, scored "no cultural content" by every prior
-  arm) now reads *"paisaje natural en Wirikuta, San Luis Potosí"* (student) /
-  *"posiblemente relacionado con la cultura wixárika, que considera Wirikuta uno de
-  los cinco lugares más sagrados"* (teacher). grn_025 (teacher): *"celebración
-  cultural del chamamé en Argentina con... typói"* — correct festival, country, and
-  garment.
+- **Audit "wins" (see 2026-07-28 correction above before citing these)**:
+  hch_021 (bare hills, scored "no cultural content" by every prior arm) now
+  reads *"paisaje natural en Wirikuta, San Luis Potosí"* (student) — **but this
+  is unverified**: direct image comparison shows the retrieved neighbor is a
+  completely different scene (ceremonial gathering, not a canyon), and the claim
+  is copied from its caption text, not independently grounded. grn_025 (teacher):
+  *"celebración cultural del chamamé en Argentina con... typói"* — correct
+  festival, country, and garment (this one IS independently verifiable, and
+  correct, from the poster visible in the image).
 - **The hedging-capability gap**: the teacher follows the calibration instruction
   (hedges 27/50, 23/50); the 2B student hedges *less* than its own baseline (5/50,
   0/50) — it converts retrieved concepts into confident assertions, sometimes
