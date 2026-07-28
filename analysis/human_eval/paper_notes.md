@@ -348,6 +348,50 @@ generated text), a similarity-only retrieval channel will sometimes hand the
 model a same-category-wrong-object reference, and there is no free way to catch
 this other than eyes-on spot-checking.
 
+## Prototype: verbose-observation + text-only RAG reasoning (2026-07-28, future work)
+
+Motivated directly by the CBIR reliability finding above: if image retrieval's
+problem is coarse visual similarity standing in for content match, could
+*text* retrieval do better — describe the image verbosely first, text-search
+Wikipedia on that description (concept match, not pixel match), then reason
+over the retrieved snippets explicitly (`analysis/human_eval/
+prototype_text_rag.py`, 3 images, no training, qualitative only — does not
+touch the main results table)?
+
+**Mixed result, cleanly split into two separate findings:**
+- **grn_019 (ñandutí): the retrieval half works.** Text search on the verbose
+  observation ("patrones geométricos... complejo y estructurado") retrieved
+  the Ñandutí Wikipedia article at 0.51 — top hit, correct concept, verbatim
+  match on "imita el diseño de la telaraña" (spider-web design) — found via
+  text where image-CBIR gave a textile shop. But the reasoning/synthesis step
+  never used it: the final caption restates the observation without naming
+  ñandutí at all. **Retrieval succeeded; synthesis is the remaining
+  bottleneck**, and it's a different bottleneck than the one this fixes.
+- **hch_021 (Wirikuta) and bzd_042 (Cahuita): text retrieval has the same
+  failure mode as image retrieval, just moved.** Best text-match scores are
+  low (0.34, 0.34) — genuinely no good bank entry for either image — yet the
+  synthesis step still confidently used the top (weak, likely wrong) hit
+  ("Sierra Madre Oriental" for hch_021). Low-confidence retrieval getting used
+  anyway is not solved by switching channels; it needs its own guard
+  (a hard confidence floor below which the model is instructed to say nothing,
+  not just hedge).
+- **bzd_042 also surfaced a sharper, concrete failure**: the final caption
+  literally ends "...con un entorno bribri y fragmentos de Wikipedia
+  recuperados" — the model partially echoed the prompt's own scaffolding
+  language into its output rather than executing the reasoning steps. Direct
+  evidence that multi-step reasoning instructions are unreliable at 2B scale,
+  not a hypothetical concern.
+
+**Framing for the paper**: the idea is validated at the mechanism level (one
+clean, concrete win, found exactly as hypothesized) and cleanly separates two
+previously-conflated problems — retrieval quality and synthesis reliability —
+that any single-channel fix (image or text) doesn't solve alone. Reasonable
+future work: text retrieval for concept-finding + a confidence floor that
+permits silence, combined with either a 7B synthesis step or targeted
+distillation of the reasoning behavior specifically (distinct from the
+calibration distillation already done, which didn't include this kind of
+explicit multi-step reasoning in training).
+
 ## Draft limitations paragraphs (adapt freely)
 
 > Our human evaluation of cultural accuracy is bounded by annotator expertise:
