@@ -770,6 +770,73 @@ near-duplicates ("¿es un sendero?"/"¿es un camino?").
 ChrF++ stays flat (base 21.47 → final 21.27), as it has through every
 faithfulness change — closing the metric-blindness case.
 
+## v4.4 aggregation ablation (2026-07-30) — re-assembly over frozen transcripts; rules fix the shallow layer, and the bridge turns out to be perception, not aggregation
+
+Because assembly is a pure function of recorded state (base, second witness,
+OCR, action, Q/A transcript — all in the out-jsonl), v4.4 re-ran ONLY the
+assembler over the frozen v4.3 transcripts (`reassemble_v44.py`, ~1 Gemini
+call/record, no VLMs) — a clean ablation isolating aggregation policy with
+the interrogation held constant.
+
+**v4.4 (rules: rationales outrank verdicts; caution under disagreement;
+witness conflicts omitted, never merged):**
+- fixed the merge-and-flourish class: grn_025's phantom "pañuelo blanco"
+  (from the 2B witness) is gone — skirt + poster only; bzd_042 hedges its
+  disputed irrigation reading and omits the disputed material; hch_015's
+  cultural flourish dropped.
+- mild over-caution appears: grn_019's confident ñandutí became
+  "posiblemente"; the cat lost its fur color.
+- did NOT flip hch_005's bridge.
+
+**v4.4b (two-stage, CoVe-style adjudicate-then-write): REJECTED.** The
+adjudicator promoted noisy rationale fragments into "facts": grn_025
+regained the pañuelo AND gained "sostiene una pancarta" (she poses next to
+the banner, does not hold it). Extra structure amplified transcript noise.
+
+**The bridge case, rediagnosed.** The adjudicator's facts list shows why no
+aggregation policy can flip it: the 7B's own ACTION extraction said
+"sendero" (designated a direct fact), its explicit verdict was SI-sendero /
+INCIERTO-puente, and the bridge appeared only in rationale asides — the
+minority signal. The 2B witness (which was RIGHT) was outvoted by the model
+that answers all the questions. **This is the self-verification ceiling one
+level up: our answerer is the same model that writes the base, so the 7B's
+parse errors are self-confirmed** — the exact mechanism we measured at 2B
+(garbled OCR surviving self-confirmation), now at 7B for scene parses.
+Verification quality is bounded by verifier independence. Fix direction
+(future work): a genuinely independent third opinion on disputed points
+only (a different local VLM, or crops/zooms of the disputed region).
+
+ChrF++ (pilot, n=20): v4.3 21.27, v4.4 21.24, v4.4b 21.62 — all within
+noise; v4.4b scores HIGHEST while being qualitatively worst on the key
+case. Metric-blindness data point #5.
+
+## The capability ladder, complete (2026-07-30) — gemini-direct ceiling arm
+
+`scripts/gemini_direct_captions.py`: one frontier call per image, image
+included (deliberately breaking the image-stays-local property to measure
+its price). Wixárika pilot, ChrF++ vs gold Spanish:
+
+| arm | ChrF++ | image leaves device? |
+|---|---|---|
+| smolvlm-rag (2B + CBIR) | 18.44 | no |
+| smolvlm-ragdistill | 18.79 | no |
+| smolvlm-verify (v3) | 20.50 | no |
+| 7B base alone | 21.47–21.75 | no |
+| v4.2/v4.3 multi-agent (gemini questioner, TEXT only) | 21.27–21.73 | text only |
+| **gemini-direct (ceiling)** | **22.71** | **yes** |
+
+Qualitatively the ceiling resolves exactly the perception errors that cap
+the local pipeline: "puente colgante" on hch_005 (both local configs said
+path), "un caballo" on hch_018 (local said donkey; gold says horse),
+"vainas de guaje" on hch_006 (the gold's exact food), "desgrana maíz" with
+the gold's verb on hch_007. The honest framing: the fully-local pipeline
+closes most of the gap to the frontier (18.4 → 21.3+ ChrF++, and the audit
+shows faithful captions), and what remains is 7B *perception*, not
+architecture — the sovereignty price is ~1–1.5 ChrF++ and a handful of
+scene-parse errors. The metric compresses even the frontier gap (+1.4 over
+the local pipeline for visibly better captions) — final metric-blindness
+data point.
+
 ## Related work for the v3/v4 architecture (verified citations, 2026-07-29)
 
 The interrogation loop and the verification gate each have named ancestry;
