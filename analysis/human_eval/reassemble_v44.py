@@ -107,9 +107,26 @@ Reglas: nombra conceptos culturales solo si un hecho los afirma (con "posiblemen
 """
 
 
+WHITELIST_RULE = """
+
+CONCEPTOS CULTURALES PERMITIDOS — los ÚNICOS términos culturales específicos (artesanías, prendas, danzas, sitios) que puedes nombrar en la descripción, y solo si el interrogatorio los apoyó (SI, o "posiblemente" con INCIERTO):
+{whitelist}
+
+Las respuestas del interrogatorio pueden CONFIRMAR o NEGAR estos conceptos, pero NUNCA introducir términos culturales nuevos. Si una respuesta nombra un término cultural que NO está en la lista (p. ej. el nombre de una prenda o una danza), NO lo uses: describe el objeto de forma genérica ("traje tradicional", "falda con volantes"). La cultura {culture_name} en sí siempre puede mencionarse.
+"""
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     parser.add_argument("files", nargs="+", type=Path)
+    parser.add_argument("--v45", action="store_true",
+                        help="v4.5: assembler may only NAME cultural concepts "
+                             "present in the retrieved snippets (recomputed "
+                             "deterministically from the stored base caption) "
+                             "-- closes the parametric-injection leak found in "
+                             "the Argentine-dress probe ('traje guasú', a "
+                             "fabricated garment name introduced by an ANSWER, "
+                             "asserted as fact by the v4.3/v4.4 assemblers)")
     parser.add_argument("--two-stage", action="store_true",
                         help="v4.4b: adjudicate disputed points into a resolved-"
                              "facts list first, then caption from the facts "
@@ -120,7 +137,11 @@ def main() -> None:
     from src.stage2.translate import ensure_vertex_credentials
     ensure_vertex_credentials()
 
-    suffix = "_v44b" if args.two_stage else "_v44"
+    suffix = "_v45" if args.v45 else ("_v44b" if args.two_stage else "_v44")
+    banks: dict = {}
+    if args.v45:
+        from src.stage1.rag_context import TextBank
+
     for path in args.files:
         out_path = path.with_name(path.stem + suffix + ".jsonl")
         done = set()
@@ -138,7 +159,20 @@ def main() -> None:
                     ocr_block=rec["ocr"], action_block=rec["action"],
                     qa_block="\n".join(qa_lines) or "(ninguna verificación -- usa solo las descripciones base)")
                 record = {**rec, "final_v43": rec["final"]}
-                if args.two_stage:
+                if args.v45:
+                    culture = rec["culture"]
+                    if culture not in banks:
+                        banks[culture] = TextBank(culture)
+                    hits = [h for h in banks[culture].retrieve(rec["base"], k=5)
+                            if h["score"] >= 0.30]
+                    whitelist = "\n".join(f"- {h['title']}: {h['extract'][:200]}"
+                                          for h in hits) or "- (ninguno: no nombres ningún concepto cultural específico)"
+                    prompt = ASSEMBLER_PROMPT_V44.format(**common) + WHITELIST_RULE.format(
+                        whitelist=whitelist, culture_name=common["culture_name"])
+                    final = scrub_meta(call_gemini_raw(prompt))
+                    record.update(version="v4.5-whitelist", final=final,
+                                  whitelist=[h["title"] for h in hits])
+                elif args.two_stage:
                     facts = call_gemini_raw(ADJUDICATION_PROMPT.format(**common))
                     final = scrub_meta(call_gemini_raw(CAPTION_FROM_FACTS_PROMPT.format(
                         culture_name=common["culture_name"], facts=facts)))

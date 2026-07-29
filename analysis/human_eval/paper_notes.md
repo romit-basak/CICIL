@@ -837,6 +837,88 @@ scene-parse errors. The metric compresses even the frontier gap (+1.4 over
 the local pipeline for visibly better captions) — final metric-blindness
 data point.
 
+## Out-of-domain probe (2026-07-31): Argentine folk dress vs the guaraní bank — no ñandutí hallucination, but a NEW leak class: parametric injection via the answer channel
+
+Probe: a web image of an Argentine traditional dance dress (turquoise floral
+pollera, white lace blouse, skirt-fan pose — visually adjacent to grn_025),
+run with --culture guarani as maximal ñandutí bait. Results:
+
+1. **Ñandutí was NOT hallucinated — but not for the reason we designed.**
+   The 7B base described the dress without pattern/lace vocabulary ("blusa
+   blanca y falda verde con volantes"), so retrieval matched dance concepts
+   (Danza de la botella 0.40, Pericón 0.34) and Ñandutí never entered. The
+   ñandutí risk is conditional on pattern-words appearing in the base.
+2. **The bait that DID clear the floor was correctly rejected** — textbook
+   designed behavior: Danza de la botella → "¿botellas de vidrio en
+   equilibrio sobre su cabeza?" → NO → absent from the final.
+3. **NEW leak class — parametric injection through the ANSWER channel.**
+   The direct culture question returned "SI... conocido como 'traje guasú'"
+   — a garment name from the 7B's parametric memory, not from retrieval
+   (the snippets were dance/music), and apparently NOT REAL (searches find
+   typói, ao po'i, pollera; no "traje guasú"). The architecture grounds the
+   QUESTIONER in retrieved snippets, but answers can assert anything, and
+   the answers-outrank-base rule makes the assembler trust them: the final
+   caption states the fabricated term as fact. Retrieval-grounding
+   constrains what gets ASKED, not what gets ANSWERED. Fix direction: the
+   assembler may only NAME cultural concepts that appear in a retrieved
+   snippet (answers can confirm/deny, not introduce).
+4. Culture-as-given caveat for the demo: the "guaraní" framing is supplied
+   by us (as the dataset supplies it in the real task); on a genuinely
+   Argentine image the pipeline dutifully frames within the given culture —
+   the system does not independently verify the culture assignment.
+5. Minor pathology: rounds 2-5 spent confirming the base's own uncontested
+   details (white blouse? stairs?) — verification budget on trivia.
+
+## v4.5: retrieval-whitelisted naming (2026-07-31) — closes the parametric-injection leak; exposes prompt-stacking instability
+
+Same frozen-transcript re-assembly method (snippets recomputed
+deterministically from the stored base caption — retrieval is
+deterministic, so no VLM time): the assembler may only NAME cultural
+concepts present in the retrieved snippets; interrogation answers can
+confirm or deny listed concepts but never introduce new terms.
+
+- **Leak closed**: the Argentine-dress probe's fabricated "traje guasú" is
+  gone — "Una mujer con vestimenta tradicional guaraní... sosteniendo el
+  borde de su falda" [generic description, as designed].
+- **No over-blocking**: grn_019 still names ñandutí (it IS in the snippets
+  and was verified); pilot finals essentially unchanged; still zero person
+  names (only "John Deere" from OCR). ChrF++ 21.47 (n=20) — unchanged, as
+  always.
+- **Honest wrinkle — prompt-stacking instability**: grn_025's phantom
+  "pañuelo blanco" (a NON-cultural object, so outside the whitelist's
+  scope) RESURFACED in v4.5 after v4.4 had suppressed it via the
+  witness-conflict rule — same rule still present in the prompt, no longer
+  followed. At ~10 stacked guardrails, compliance is stochastic: fixing one
+  leak occasionally re-opens another. This is itself a finding: prose
+  guardrails have a stacking budget; leaks that recur (phantom objects from
+  an untrusted witness) need structural enforcement (e.g., the whitelist
+  approach, which is enforceable, vs. conflict-resolution, which is
+  judgment).
+
+## v4.3 fully-local pilot run (2026-07-31) — the local rung matches the hybrid; self-stopping fixed; one new contamination vector caught
+
+qwen2.5:7b questioner + qwen2.5vl:7b answerer, nothing leaves the device,
+all 20 pilot images:
+
+- **ChrF++ final 21.70** — matches the Gemini-questioner config (21.27) and
+  the 7B base (21.58); the fully-local rung no longer pays a measurable
+  metric price vs the hybrid (vs 18.44 for the original 2B arm).
+- **Self-stopping FIXED by the code-enforced repeat-stop**: only 3/20 hit
+  the 10-round cap (v4.2 local: 19/20); 12 images finished in ≤3 rounds —
+  the local config is no longer the slow one by necessity.
+- Key finals correct: wheelchair + embroidered dress + palm hat (no drum,
+  no name); fish taco; wheelbarrow + "ganado" (more accurate than the
+  Gemini config's "cabras"); embroidering woman with drying laundry.
+  hch_005 still path-not-bridge (consistent with the verifier-independence
+  diagnosis). Zero person names.
+- **New contamination vector — in-prompt example leakage**: the v4.3 ACTION
+  question's example phrase ("sosteniendo el borde de su falda extendida",
+  chosen from grn_025) was parroted VERBATIM into hch_012's action
+  extraction, where it is false. Examples inside extraction prompts must be
+  domain-remote (cf. the questioner's deliberately Shipibo example); a
+  dataset-drawn example becomes a template the model completes. Fix is a
+  one-line example swap; documented as a methods note.
+
 ## Related work for the v3/v4 architecture (verified citations, 2026-07-29)
 
 The interrogation loop and the verification gate each have named ancestry;
