@@ -1093,3 +1093,24 @@ benign; the test is adversarial by construction.
 > arXiv:2302.09210; Kocmi et al. 2023, WMT23 findings) in exactly the way ES→target
 > is not, which is this project's premise — with the caveats that Spanish-specific
 > wording and grammar are outside what the pivot can expose.
+
+## Pilot concept-fabrication census (2026-07-29) — the strongest before/after faithfulness number
+
+Census over the 20 pilot images (CONCEPT regex = specific cultural
+vocabulary, never in any prompt; culture-name partly prompt echo under
+culture-as-given):
+
+| arm | culture-name | concept | hedged |
+|---|---|---|---|
+| generic 2B (off-the-shelf local) | 0/20 | 0 | 0 |
+| smolvlm-rag (2B + retrieval, no verification) | 12/20 | **11 — ALL "Wirikuta", ALL false** | 0 |
+| agent local v4.3.1 (final) | 11/20 | 0 | 8 |
+| gemini-direct (frontier ceiling) | 14/20 | 0 | 7 |
+
+The retrieval-only 2B attached the sacred site Wirikuta to 11/20 everyday
+scenes (bulls, tomato harvest, feeding calves) — retrieval-induced label
+copying at scale; its pilot "concept rate" is fabrication. The interrogation
+arm suppressed every false concept while keeping hedged culture attribution,
+matching gemini-direct's honesty profile (0 fabricated concepts, ~40%
+hedged) at a ~1 chrF++ cost, fully local. Candidate sentence for §6
+failure-modes paragraph and the presentation's "so what" slide.
