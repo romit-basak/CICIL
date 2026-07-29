@@ -143,11 +143,15 @@ OCR_QUESTION = (
     "únicamente: NINGUNO."
 )
 
+# Examples deliberately DOMAIN-REMOTE (bicycle/computer/garden never appear in
+# the datasets): the v4.3 run showed a dataset-drawn example ("sosteniendo el
+# borde de su falda extendida", taken from grn_025) gets parroted verbatim
+# into other images' extractions where it is false (hch_012, hch_017).
 ACTION_QUESTION = (
     "¿Qué está haciendo la persona o las personas de la imagen, si las hay, "
     "y qué sostienen o llevan puesto? Describe brevemente la acción principal "
-    "y los objetos sostenidos (p. ej. bordando una tela, sosteniendo el borde "
-    "de su falda extendida, cargando sacos a un camión). Si no hay personas, "
+    "y los objetos sostenidos (p. ej. reparando una bicicleta, escribiendo en "
+    "una computadora, regando las plantas de un jardín). Si no hay personas, "
     "responde únicamente: NINGUNA."
 )
 
