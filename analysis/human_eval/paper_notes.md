@@ -674,7 +674,7 @@ standing ACTION question joins OCR; neutral phrasing; verify-the-base-first
 no-repetition rule; answers outrank the base; no meta-language, no invented
 place names, no unverified cultural flourishes.
 
-## v4.2 pilot results (2026-07-30) — the audit's five severe failures are fixed; ChrF++ barely notices
+## v4.2 pilot results (2026-07-29) — the audit's five severe failures are fixed; ChrF++ barely notices
 
 Both configs, all 20 pilot images, cap 10. ChrF++ vs gold: gemini final
 **21.73** (v4.1: 20.04), local-7B final **21.22**; the 7B-written base alone
@@ -725,7 +725,7 @@ New/remaining issues (v4.2 audit):
 4. hch_018 unchanged: still "burro" vs gold's horse; genuinely ambiguous
    animal.
 
-## v4.3 validation (2026-07-30) — naming rule holds under adversarial attack; the last structural flaw is verdict-over-rationale aggregation
+## v4.3 validation (2026-07-29) — naming rule holds under adversarial attack; the last structural flaw is verdict-over-rationale aggregation
 
 v4.3 = v4.2 + never-name-individuals (OCR-label exception, tightened to
 "label OF the person"), two-witness bases (7B + 2B, contradictions =
@@ -770,7 +770,7 @@ near-duplicates ("¿es un sendero?"/"¿es un camino?").
 ChrF++ stays flat (base 21.47 → final 21.27), as it has through every
 faithfulness change — closing the metric-blindness case.
 
-## v4.4 aggregation ablation (2026-07-30) — re-assembly over frozen transcripts; rules fix the shallow layer, and the bridge turns out to be perception, not aggregation
+## v4.4 aggregation ablation (2026-07-29) — re-assembly over frozen transcripts; rules fix the shallow layer, and the bridge turns out to be perception, not aggregation
 
 Because assembly is a pure function of recorded state (base, second witness,
 OCR, action, Q/A transcript — all in the out-jsonl), v4.4 re-ran ONLY the
@@ -810,7 +810,7 @@ ChrF++ (pilot, n=20): v4.3 21.27, v4.4 21.24, v4.4b 21.62 — all within
 noise; v4.4b scores HIGHEST while being qualitatively worst on the key
 case. Metric-blindness data point #5.
 
-## The capability ladder, complete (2026-07-30) — gemini-direct ceiling arm
+## The capability ladder, complete (2026-07-29) — gemini-direct ceiling arm
 
 `scripts/gemini_direct_captions.py`: one frontier call per image, image
 included (deliberately breaking the image-stays-local property to measure
@@ -837,7 +837,7 @@ scene-parse errors. The metric compresses even the frontier gap (+1.4 over
 the local pipeline for visibly better captions) — final metric-blindness
 data point.
 
-## Out-of-domain probe (2026-07-31): Argentine folk dress vs the guaraní bank — no ñandutí hallucination, but a NEW leak class: parametric injection via the answer channel
+## Out-of-domain probe (2026-07-29): Argentine folk dress vs the guaraní bank — no ñandutí hallucination, but a NEW leak class: parametric injection via the answer channel
 
 Probe: a web image of an Argentine traditional dance dress (turquoise floral
 pollera, white lace blouse, skirt-fan pose — visually adjacent to grn_025),
@@ -869,7 +869,7 @@ run with --culture guarani as maximal ñandutí bait. Results:
 5. Minor pathology: rounds 2-5 spent confirming the base's own uncontested
    details (white blouse? stairs?) — verification budget on trivia.
 
-## v4.5: retrieval-whitelisted naming (2026-07-31) — closes the parametric-injection leak; exposes prompt-stacking instability
+## v4.5: retrieval-whitelisted naming (2026-07-29) — closes the parametric-injection leak; exposes prompt-stacking instability
 
 Same frozen-transcript re-assembly method (snippets recomputed
 deterministically from the stored base caption — retrieval is
@@ -895,7 +895,7 @@ confirm or deny listed concepts but never introduce new terms.
   approach, which is enforceable, vs. conflict-resolution, which is
   judgment).
 
-## v4.3 fully-local pilot run (2026-07-31) — the local rung matches the hybrid; self-stopping fixed; one new contamination vector caught
+## v4.3 fully-local pilot run (2026-07-29) — the local rung matches the hybrid; self-stopping fixed; one new contamination vector caught
 
 qwen2.5:7b questioner + qwen2.5vl:7b answerer, nothing leaves the device,
 all 20 pilot images:
@@ -1002,7 +1002,7 @@ CVPR 2017, arXiv:1611.08669. One sentence in the intro.
 > work. Absent that input we default to non-identification, trading recall
 > of public figures for protection against misattribution.
 
-**Adversarial test of the naming rule (2026-07-30).** We composited a
+**Adversarial test of the naming rule (2026-07-29).** We composited a
 prominent sign reading "MUSEO JOSÉ BENÍTEZ SÁNCHEZ" onto the hch_012
 riverbank-embroidery photo (PIL overlay; the "photo of me in front of a
 George Washington label" scenario) and ran v4.3 on it. Result: the dignity
