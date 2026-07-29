@@ -1114,3 +1114,22 @@ arm suppressed every false concept while keeping hedged culture attribution,
 matching gemini-direct's honesty profile (0 fabricated concepts, ~40%
 hedged) at a ~1 chrF++ cost, fully local. Candidate sentence for §6
 failure-modes paragraph and the presentation's "so what" slide.
+
+## Final local arm + round-4 rebuild (2026-07-29 evening)
+
+- v4.3.1 reruns: gemini pilot final 21.70 (v4.3: 21.27), local 21.68 (v4.3:
+  21.70). hch_012/hch_017 example-parroting gone; hch_007 "bicicleta" verified
+  REAL in the image (leak census false positive).
+- v4.5-local reassembly over v4.3.1-local transcripts: final ChrF++ **21.05**;
+  zero fabricated concepts; flourish clauses raw 4/20 → 0 after adding the
+  clause-level scrub to scrub_meta IN CODE (prose rule leaked stochastically,
+  incl. a subjunctive "refleje" variant the first regex missed — grn_016).
+  The −0.6 vs v4.3.1 is largely metric artifact: golds name the culture, so
+  stripping "evocando la cultura wixárika" removes shared tokens. Now in the
+  paper's metric paragraph as the inversion data point.
+- Cross-culture dev arm: 20 images (5 × guarani/maya/bribri/nahuatl, seed
+  20260731) run fully local, reassembled v4.5-local, zero flourishes/concept
+  fabrications.
+- Round 4 rebuilt: 40 images, 5 cultures, arm B = v4.5-local finals; English
+  pivot + interface regenerated; all image paths verified on disk; gold shown
+  only for the 20 wixárika-pilot rows, labeled "context, not the answer key".

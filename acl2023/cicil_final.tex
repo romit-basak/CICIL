@@ -463,16 +463,19 @@ RAG distill        & 18.79 \\
 Verify-RAG$^{*}$   & 20.50 \\
 Local 7B base      & 21.47--21.75 \\
 Agent v4.2         & 21.73 \\
-Agent v4.3 (local) & 21.70 \\
-% TODO-TONIGHT: add final agent row (v4.3.1 transcripts + v4.5 whitelist
-% aggregation, fully local) when tonight's runs land.
+Agent v4.3.1 (local) & 21.68 \\
+Agent final (strict agg., local) & 21.05 \\
 Gemini direct      & 22.71 \\
 \bottomrule
 \end{tabular}
 \caption{Capability ladder on the Wixárika pilot (chrF++ vs gold Spanish).
 $^{*}$The Verify-RAG score is inflated for the wrong reason: its 2B verifier
 accepted every claim (\S4.4), so its gain reflects longer, more assertive
-captions, not verification.}
+captions, not verification. ``Agent final'' applies the strictest
+aggregation policy (retrieval-whitelisted naming, decorative-flourish
+removal); its drop below v4.3.1 is largely a metric artifact---removing
+decorative mentions of the culture also removes tokens shared with
+references that name it.}
 \label{tab:ladder}
 \end{table}
 
@@ -511,7 +514,11 @@ images---and chrF++ moved by less than half a point in either direction at
 every step (Table~\ref{tab:ladder}). The converse also holds: the Verify-RAG
 configuration gained two chrF++ points from a 2B verifier that we later
 showed accepts every claim it is asked (\S4.4), and degenerate repetition
-loops still scored nontrivially. On this benchmark, reference overlap and
+loops still scored nontrivially. The effect can even invert: enforcing the
+no-flourish rule (removing decorative clauses like ``evoking Wixárika
+culture'') \emph{costs} about 0.6 chrF++, because the references
+legitimately name the culture---the metric rewards keeping unfounded
+decoration. On this benchmark, reference overlap and
 caption faithfulness have effectively decoupled; we therefore treat chrF++
 as a sanity check rather than an objective, and rest the system comparison
 on specificity rates, audits, and human evaluation.

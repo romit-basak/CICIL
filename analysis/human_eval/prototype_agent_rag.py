@@ -300,13 +300,31 @@ META_LANGUAGE_RE = re.compile(
     r"no hay evidencia|no se observa|no se pueden? (?:identificar|determinar|ver)|"
     r"no es posible determinar|sin evidencia de", re.I)
 
+# Decorative culture-flourish clause, either as a whole sentence
+# ("Posiblemente refleja la cultura X.") or as a trailing participial clause
+# glued to a content sentence (", evocando la cultura X (México)"). The
+# no-flourish prompt rule leaks stochastically under prompt stacking
+# (2 of 20 in the v4.5-local pilot finals); enforce in code like scrub_meta.
+FLOURISH_CLAUSE_RE = re.compile(
+    r",?\s*(?:en\s+un\s+(?:entorno|contexto|ambiente)\s+)?(?:posiblemente\s+)?"
+    r"(?:evocando|reflejando|representando|que\s+(?:posiblemente\s+)?"
+    r"(?:refleja|refleje|evoca|evoque|representa|represente))\s+"
+    r"(?:elementos\s+de\s+)?la\s+cultura[^.!?]*", re.I)
+FLOURISH_SENTENCE_RE = re.compile(
+    r"^\s*(?:posiblemente\s+)?(?:refleja|evoca|representa)\s+(?:elementos\s+"
+    r"de\s+)?la\s+cultura", re.I)
+
 
 def scrub_meta(caption: str) -> str:
-    """Drop report-style sentences from a caption (the no-meta prompt rule
-    slipped once in the v4.2 local run; enforce it in code)."""
+    """Drop report-style sentences and decorative culture-flourish clauses
+    from a caption (both prompt rules slipped stochastically in local runs;
+    enforce them in code)."""
     sentences = re.split(r"(?<=[.!?])\s+", caption)
-    kept = [s for s in sentences if not META_LANGUAGE_RE.search(s)]
-    return " ".join(kept).strip() or caption
+    kept = [FLOURISH_CLAUSE_RE.sub("", s) for s in sentences
+            if not META_LANGUAGE_RE.search(s)
+            and not FLOURISH_SENTENCE_RE.search(s)]
+    out = " ".join(k.strip() for k in kept if k.strip()).strip()
+    return out or caption
 
 
 def norm_question(q: str) -> str:
