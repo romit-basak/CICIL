@@ -24,6 +24,36 @@ though only text crosses the API (never the image), an LLM that both frames
 the questions and writes the caption has extracted what it wanted, so the
 sovereignty claim belongs to the --llm ollama rung only.
 
+v4.2 (2026-07-29), after the manual image audit of the v4.1 gemini-config
+pilot run found the 2B base caption to be the dominant unrecoverable error
+source (hallucinated drum/boat/firewood scenes survived as "protected facts";
+the 7B's in-rationale corrections -- "pescado", "en la mano" -- never reached
+the caption because they weren't answers to questions):
+  1. the ANSWERER (7B) writes the base observation by default (--base
+     answerer); the SmolVLM file base remains as --base file for comparison;
+  2. a standing ACTION question ("what are the people doing?") joins OCR --
+     the audit found actions were structurally unprobed (embroidering,
+     feeding calves, loading a truck all went unasked);
+  3. neutral-phrasing rule: questions must not presuppose base-claimed
+     object identities ("what is she holding?", never "does the kerchief she
+     holds have X?" -- the kerchief was a base hallucination that a truthful
+     SI about the fabric laundered into the final);
+  4. answers outrank the base: the assembler is instructed that when an
+     answer's rationale contradicts the base description, the answer wins;
+  5. no unverified cultural flourishes ("evoca la vida rural wixárika"
+     appeared on a sheep photo with zero verifications).
+Plus four rules from scoring the partial v4.1 LOCAL run (whose naive direct
+questions beat Gemini on the hardest image: "is he playing a drum?" -> "NO,
+he's in a WHEELCHAIR" -> near-gold caption, while Gemini's feature-level
+probes never questioned the hallucinated drum at all):
+  6. the questioner treats the base as a HYPOTHESIS -- load-bearing unusual
+     claims get verified first with a direct question;
+  7. direct is-it-traditional-dress questions are explicitly allowed;
+  8. no-repetition rule (the local questioner asked the same sandal question
+     5x and never stopped voluntarily -- all 6 images hit the cap);
+  9. assembler: no meta-language ("no hay evidencia de..." is not a caption)
+     and no place names absent from OCR/answers (it invented "Nayarit").
+
 Multi-pass mode assembles a caption after EVERY round (read-only: the
 questioner never sees these, so the trajectory matches an uninstrumented run).
 This buys three things at one assembler call per round: (a) the round-1
@@ -94,6 +124,13 @@ OCR_QUESTION = (
     "únicamente: NINGUNO."
 )
 
+ACTION_QUESTION = (
+    "¿Qué está haciendo la persona o las personas de la imagen, si las hay? "
+    "Describe brevemente la acción principal (p. ej. bordando una tela, "
+    "dando de comer a animales, cargando sacos a un camión). Si no hay "
+    "personas, responde únicamente: NINGUNA."
+)
+
 ITERATIVE_QUESTIONER_PROMPT = """\
 Eres un experto en la cultura {culture_name}. Estás interrogando, pregunta a pregunta, a un modelo de visión que está mirando una imagen que tú no puedes ver. Su descripción inicial:
 
@@ -101,6 +138,9 @@ Eres un experto en la cultura {culture_name}. Estás interrogando, pregunta a pr
 
 Texto legible que el modelo de visión transcribió de la imagen (hecho observado — no lo cuestiones, pero puede informar tus preguntas):
 {ocr_block}
+
+Acción principal que el modelo de visión observó (hecho observado):
+{action_block}
 
 Fragmentos de Wikipedia sobre esta cultura, recuperados a partir de esa descripción, con su puntuación de similitud (0-1; por debajo de ~0.40 la relación suele ser casual, no real):
 {snippets}
@@ -113,6 +153,12 @@ Decide UNA de dos opciones:
 2. Termina el interrogatorio, si no queda ningún candidato plausible (puntuación ≥0.40 y vínculo visual real con la descripción) sin verificar, o si ya tienes lo necesario.
 
 Mismas reglas que siempre: nunca cuestiones hechos ya observados directamente (texto legible, lugares leídos en la imagen); no inventes conceptos fuera de los fragmentos; una pregunta genérica sobre un concepto irrelevante es peor que ninguna. Si la descripción menciona un rasgo visual genérico y un fragmento con puntuación ≥0.45 describe un rasgo diagnóstico concreto, DEBES sondearlo antes de terminar.
+
+Regla de fraseo NEUTRO: nunca presupongas en la pregunta un objeto o identidad tomado de la descripción base que aún no haya sido confirmado. Pregunta "¿Qué sostiene la mujer?" o "¿El objeto que sostiene la mujer tiene [rasgo]?", nunca "¿El pañuelo que sostiene la mujer tiene [rasgo]?" — si la base se equivocó de objeto, una respuesta afirmativa sobre el rasgo blanquearía el error.
+
+PRIMERA PRIORIDAD — verificar la base: la descripción base es una HIPÓTESIS, no un hecho. Si contiene una afirmación central o inusual (un instrumento musical, un animal exótico, una acción llamativa, un vehículo), verifícala primero con una pregunta directa ("¿El hombre está tocando un tambor?") — una respuesta NO suele venir con la corrección correcta. También es legítima y productiva la pregunta directa sobre vestimenta: "¿La persona lleva vestimenta tradicional {culture_name}?".
+
+Regla de NO REPETICIÓN: nunca vuelvas a formular una pregunta ya respondida, ni una variante trivial de ella. Dos INCIERTO sobre el mismo detalle significan que la imagen no lo resuelve — cambia de tema o termina. Cada ronda debe aportar información nueva.
 
 Responde SOLO con JSON válido, sin markdown. Una de estas dos formas:
 [{{"question": "...", "concept": "...", "vague_part": "..."}}]
@@ -128,13 +174,19 @@ Descripción base del modelo de visión (sus datos directamente observados son f
 Texto legible transcrito de la imagen (hecho directo — si nombra un lugar o evento, úsalo tal cual; nunca lo sustituyas por otro lugar):
 {ocr_block}
 
+Acción principal observada (hecho directo — la actividad suele ser lo más importante de la imagen; inclúyela):
+{action_block}
+
 Preguntas de verificación visual y las respuestas del modelo de visión mirando la imagen:
 {qa_block}
 
 Reglas estrictas:
-- Conserva los hechos concretos observados de la base (objetos, colores, texto legible, lugares leídos en la imagen). No los reemplaces ni contradigas.
+- Conserva los hechos concretos observados de la base (objetos, colores, texto legible, lugares leídos en la imagen). No los reemplaces ni contradigas — EXCEPTO cuando una respuesta del interrogatorio los contradiga.
+- Las RESPUESTAS del interrogatorio prevalecen sobre la descripción base: si la base dice "pollo" y una respuesta menciona que es pescado, escribe pescado; si la base describe un objeto que una respuesta niega, elimínalo.
 - Nombra un concepto cultural SOLO si su verificación fue SI (usa "posiblemente" si fue INCIERTO). Si fue NO o no hubo verificación, no lo menciones.
-- No añadas ningún dato cultural que no venga de una verificación.
+- No añadas ningún dato cultural que no venga de una verificación, ni frases decorativas del tipo "refleja/evoca/representa la cultura {culture_name}" — la pertenencia cultural la da el contexto del dataset, no la descripción.
+- No añadas nombres de lugares, estados o regiones que no aparezcan en el texto legible o en una respuesta del interrogatorio.
+- Escribe una DESCRIPCIÓN, no un informe: nunca uses frases meta como "no hay evidencia de...", "no se observan elementos...", ni menciones el proceso de verificación. Si algo no se verificó, simplemente no lo menciones.
 - Corrige atribuciones culturales erróneas de la base (esta imagen es de la cultura {culture_name}).
 
 Responde SOLO con la descripción final, una sola oración o dos, sin explicación.
@@ -249,6 +301,11 @@ def main() -> None:
                              "next (requires the VLM; ignored in "
                              "--questions-only)")
     parser.add_argument("--max-rounds", type=int, default=5)
+    parser.add_argument("--base", default="answerer", choices=["answerer", "file"],
+                        help="who writes the base observation: the answerer "
+                             "VLM (v4.2 default -- the audit showed the 2B "
+                             "file base is the dominant error source) or the "
+                             "pre-generated SmolVLM file (v4.1 behavior)")
     parser.add_argument("--pilot", action="store_true",
                         help="run ALL 20 wixarika pilot images instead of the "
                              "5 dev cases -- the pilot has gold Spanish, so "
@@ -286,13 +343,18 @@ def main() -> None:
         if culture not in text_banks:
             text_banks[culture] = TextBank(culture)
 
-        base_path = OUTPUTS / f"{culture}_{split}_generic_smolvlm.jsonl"
-        base = next(json.loads(l)["generated_spanish"]
-                    for l in base_path.open(encoding="utf-8")
-                    if json.loads(l)["id"] == image_id)
-
         print(f"\n{'=' * 70}\n{image_id} ({culture})\n{'=' * 70}")
-        print(f"STEP 0 -- base caption (generic smolvlm arm):\n  {base}")
+        if args.base == "answerer" and backend is not None:
+            from src.stage1 import vqa_prompts
+            base = backend.caption(ex.image_path, vqa_prompts.GENERIC_PROMPT)
+            base_source = "answerer"
+        else:
+            base_path = OUTPUTS / f"{culture}_{split}_generic_smolvlm.jsonl"
+            base = next(json.loads(l)["generated_spanish"]
+                        for l in base_path.open(encoding="utf-8")
+                        if json.loads(l)["id"] == image_id)
+            base_source = "smolvlm-file"
+        print(f"STEP 0 -- base caption ({base_source}):\n  {base}")
 
         hits = text_banks[culture].retrieve(base, k=5)
         print("STEP 1 -- retrieval on base caption:")
@@ -320,11 +382,16 @@ def main() -> None:
         # the v3 grn_025 finding). Extracted once, passed to questioner and
         # assembler as a given fact.
         ocr_block = "(no extraído)"
+        action_block = "(no extraído)"
         if backend is not None:
             ocr = backend.caption(ex.image_path, OCR_QUESTION)
             ocr_block = ("(ninguno)" if re.search(r"^\s*ninguno", ocr, re.I)
                          or len(ocr.strip()) < 3 else ocr.strip()[:300])
             print(f"STEP 1.5 -- legible text (answerer): {ocr_block}")
+            action = backend.caption(ex.image_path, ACTION_QUESTION)
+            action_block = ("(ninguna persona)" if re.search(r"^\s*ninguna", action, re.I)
+                            or len(action.strip()) < 3 else action.strip()[:300])
+            print(f"STEP 1.6 -- main action (answerer): {action_block}")
 
         rounds_log: list[dict] = []
         stop_reason = None
@@ -337,7 +404,7 @@ def main() -> None:
             for round_i in range(1, args.max_rounds + 1):
                 decision = parse_decision(llm_call(ITERATIVE_QUESTIONER_PROMPT.format(
                     culture_name=CULTURE_NAMES_ES[culture], base_caption=base,
-                    snippets=snippets, ocr_block=ocr_block,
+                    snippets=snippets, ocr_block=ocr_block, action_block=action_block,
                     qa_block="\n".join(transcript) or "(aún ninguna pregunta)")))
                 if decision.get("done"):
                     stop_reason = decision.get("reason", "?")
@@ -362,7 +429,8 @@ def main() -> None:
                 # one run yields the whole quality-vs-rounds curve.
                 round_caption = llm_call(ASSEMBLER_PROMPT.format(
                     culture_name=CULTURE_NAMES_ES[culture], base_caption=base,
-                    ocr_block=ocr_block, qa_block="\n".join(qa_lines)))
+                    ocr_block=ocr_block, action_block=action_block,
+                    qa_block="\n".join(qa_lines)))
                 rounds_log.append({"round": round_i, "qa": round_qa,
                                    "caption": round_caption})
                 print(f"  CAPTION after round {round_i}: {round_caption}")
@@ -387,7 +455,7 @@ def main() -> None:
 
         final = llm_call(ASSEMBLER_PROMPT.format(
             culture_name=CULTURE_NAMES_ES[culture], base_caption=base,
-            ocr_block=ocr_block,
+            ocr_block=ocr_block, action_block=action_block,
             qa_block="\n".join(qa_lines) or "(ninguna verificación -- usa solo la base)"))
         print(f"STEP 4 -- assembled final caption ({args.llm}):\n  {final}")
 
@@ -396,8 +464,10 @@ def main() -> None:
                 f.write(json.dumps({
                     "id": image_id, "culture": culture, "split": split,
                     "llm": args.llm, "answerer": args.answerer,
-                    "base": base, "ocr": ocr_block, "rounds": rounds_log,
-                    "stop_reason": stop_reason, "final": final,
+                    "version": "v4.2", "base_source": base_source,
+                    "base": base, "ocr": ocr_block, "action": action_block,
+                    "rounds": rounds_log, "stop_reason": stop_reason,
+                    "final": final,
                 }, ensure_ascii=False) + "\n")
 
     print(f"\n{'=' * 70}\nDone. Qualitative comparison only -- no new eval numbers.")

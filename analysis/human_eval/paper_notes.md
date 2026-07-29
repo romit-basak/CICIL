@@ -560,6 +560,20 @@ Key qualitative results on the 5 probe cases:
   snippet ("are there rock formations?" → inevitable SI → "Sierra Madre
   Oriental" asserted). Prompt rules don't bind; the floor is now enforced in
   code. The local questioner — less creative — behaved better on that case.
+- **New failure mode found by manual image check (grn_025): protected-fact
+  laundering.** The final caption says "pañuelo de ñandutí" but the image
+  (checked directly) shows NO shawl — she holds her spread white SKIRT, which
+  carries the radial ñandutí-style medallions. Chain: the 2B base caption
+  hallucinated the "pañuelo"; the preserve-observed-facts rule protected the
+  object; the questioner's question EMBEDDED the premise ("does the pañuelo
+  she holds have spiderweb designs?"); the 7B truthfully answered SI about
+  the held fabric — a leading question laundered a wrong object name into a
+  verified claim. (Contrast yua_001, where a premise-free question let the
+  7B veto the base's "camión".) Also confirmed on the poster: the real year
+  is 2012 — both OCR runs misread the digit (2013/2019). Proposed fix: an
+  object-inventory step symmetric to the OCR step (one open 7B question
+  listing main objects/what is held or worn), giving questioner+assembler a
+  second observation source that outranks the 2B's nouns.
 - **Local questioner status:** qwen2.5:3b collapses in-loop (tautological
   repeated questions, never stops, its assembler reasserted a rejected
   cultural framing); qwen2.5:7b is serviceable (correct ñandutí probe,
@@ -580,6 +594,201 @@ questioner configs, per-round ChrF++ vs gold Spanish
 (`analysis/human_eval/score_agent_curve.py`) — including whether the
 questioner's voluntary stop tracks the quality plateau (the deployable
 stopping rule).
+
+## Manual audit of the v4.1 pilot curve (2026-07-29) — ChrF++ is blind to everything that matters; the 2B base is the dominant error source
+
+Setup: v4.1 multi-pass, Gemini questioner + local 7B answerer, all 20
+wixárika pilot images (real gold Spanish), cap 10 rounds. ChrF++ vs gold:
+**flat** — base 20.59, capped-at-round-k between 19.60 and 20.24 for every k,
+final 20.04. The interrogation neither helps nor hurts the metric. The manual
+audit (12/20 images inspected directly — every case where caption,
+transcripts, and gold disagreed — the rest checked transcript-vs-gold) tells
+a completely different story: **7 good, 8 mixed, 5 bad**, and the metric
+cannot distinguish the best caption in the set from the worst. This is the
+paper's strongest single piece of evidence that ChrF++ (and by extension the
+shared-task metric) cannot evaluate cultural faithfulness.
+
+Failure taxonomy from the audit (each with a verified exemplar):
+
+1. **Protected-fact laundering (systemic, the dominant failure).** The
+   assembler rule "the base's observed facts are reliable" protects 2B
+   hallucinations end-to-end. hch_015: image shows a grilled whole fish on a
+   tortilla held in a hand (gold: "pescado (mojarra) a la brasa"); the 7B
+   answerer said "pescado" in two rationales and "está en la mano" in a
+   third; the final still reads "Un plato de pollo con lima, servido sobre
+   arena" ["a plate of chicken with lime, served on sand"] — the corrections
+   were side-remarks to art-motif questions, and the assembler only
+   integrates answers-to-questions. Same mechanism: hch_008 (invented "boat"
+   kept; but OCR "6603" off the tractor hood was CORRECT), hch_018
+   ("resting" kept for a standing animal).
+2. **The catastrophic composite — hch_003.** Gold: disabled wixárika youth
+   in a wheelchair, full traditional dress, palm hat, embroidered bag. The
+   image is covered in unmistakable Huichol cross-stitch. Final (Gemini
+   config): "Un hombre con traje tradicional mexicano y sombrero de charro
+   toca un tambor de madera" ["a man in traditional Mexican dress and charro
+   hat plays a wooden drum"]. The drum is the 2B's hallucination of the
+   wheelchair; the questioner's narrow feature probes ("feathers on the
+   hat?" NO) talked the pipeline out of the correct culture; a leading
+   charro question got a false SI.
+3. **Zero-rounds = base + label.** When retrieval is weak the questioner
+   stops immediately and the final is the 2B base with a culture tag:
+   hch_013 (woman feeding calves with a wheelbarrow → "sitting holding
+   firewood"), hch_014 (five men loading tomatillo sacks onto a truck → "two
+   people carrying leaves and branches"; the truck absent). The pipeline's
+   floor is exactly the 2B's accuracy.
+4. **Actions structurally unprobed.** hch_012: the woman is visibly
+   embroidering (thread in hand, cross-stitch in progress — the wixárika
+   craft itself, and the center of the gold caption); questions cover
+   objects and patterns, never activities, so it was never asked.
+5. **Presupposed attributes on present people get echo-SIs even from the
+   7B.** hch_005: "does she wear traditional dress incl. embroidered shirt
+   and feathered hat?" → SI; no feathered hat exists; the actual story
+   (mother and child crossing the hanging bridge with a red school backpack
+   = the gold) is absent. The decoy control generalizes only to absent
+   OBJECTS, not presupposed attributes.
+6. **Genuine wins, both from answerer corrections**: hch_010 (base's "lion"
+   → two cattle in a brick corral, matches gold), hch_016 (base's cornfield
+   → green tomatillo harvest into a bucket, close to gold).
+
+**The v4.1 LOCAL config partial (6 images before it was superseded) flips a
+conclusion.** The "weak" qwen2.5:7b questioner produced the BEST caption of
+any configuration on the catastrophic image: it directly verified the base's
+central claim — "¿El hombre está tocando un tambor?" → "NO. Está sentado en
+una silla de ruedas" ["is he playing a drum?" → "NO, he's sitting in a
+wheelchair"] — then asked the direct culture question and got a correct SI
+("sombrero típico wixárika y túnica con bordados"). Final: "Un hombre
+sentado en una silla de ruedas, vestido con ropa tradicional wixárika..." —
+essentially the gold. The naive strategy (treat the base as hypotheses,
+re-derive the scene) beat the sophisticated one (protect the base, probe
+features) exactly where it mattered. Its ChrF++ was also the only positive
+curve (base 19.25 → final 21.42, n=6 — small, but directionally opposite to
+Gemini's flat). Pathologies to fix: no voluntary stopping (6/6 hit the
+10-round cap — also why it is ~30 min/image), verbatim question repetition
+(same sandal question 5×), one assembler-invented place name ("Nayarit",
+nowhere in any input), meta-language as caption ("No hay evidencia de..."),
+and a decorative "posiblemente arte huichol" from cattle brand marks.
+
+**v4.2 (running overnight)** integrates all of it: the 7B writes the base;
+standing ACTION question joins OCR; neutral phrasing; verify-the-base-first
+(the wheelchair lesson); direct traditional-dress questions allowed;
+no-repetition rule; answers outrank the base; no meta-language, no invented
+place names, no unverified cultural flourishes.
+
+## v4.2 pilot results (2026-07-30) — the audit's five severe failures are fixed; ChrF++ barely notices
+
+Both configs, all 20 pilot images, cap 10. ChrF++ vs gold: gemini final
+**21.73** (v4.1: 20.04), local-7B final **21.22**; the 7B-written base alone
+scores 21.75/21.66 (v4.1's 2B base: 20.59). So of the +1.7 end-to-end gain,
+essentially all is the base-model swap; the per-round curve is again flat.
+Meanwhile the manual audit shows a step change — every documented severe
+failure from the v4.1 audit is fixed in BOTH configs:
+
+- hch_003: drum GONE; wheelchair + wixárika dress correct; gemini even reads
+  the palm hat's red chaquira trim and the deer/eagle cross-stitch motifs
+  (all truly in the image).
+- hch_008: boat GONE — "Dos personas sacan un tractor John Deere 6603 verde
+  del agua, cerca de una carretera elevada" [two people pull a green John
+  Deere 6603 tractor from the water, near an elevated highway] — every
+  element correct incl. OCR.
+- hch_015: chicken GONE — "taco de pescado frito con limón" [fried-fish taco
+  with lime], held in a hand, waterscape. Matches gold.
+- hch_013: "da de comer a ... vacas" [feeds cattle], floral skirt, red
+  scarf; local config even names the wheelbarrow. (Both add "cabras"
+  [goats] that aren't there — minor.)
+- hch_014: "cargan sacos de frutas verdes a un camión ... rampa" [load sacks
+  of green produce onto a truck ... ramp]; local config adds the man
+  checking his phone on the truck — TRUE, verified in the image.
+- hch_012: the ACTION question caught the embroidery ("trabaja un paño
+  blanco con bordados"); local config adds the drying laundry — matching
+  gold's "after washing her clothes".
+
+**The paper's money line: a design change that fixed five verified severe
+hallucinations moved ChrF++ by ~+1.7 — and that gain is attributable to the
+base swap, not the fixes. The metric cannot see the difference between "a
+man plays a wooden drum" and "a man in a wheelchair" on the same image.**
+
+New/remaining issues (v4.2 audit):
+1. **NEW fabrication class — named individuals**: gemini's hch_003 caption
+   says "posiblemente José Benítez Sánchez" (a real Huichol artist,
+   presumably from a retrieved snippet) about an unidentified man. Needs an
+   explicit never-name-individuals rule (accuracy AND dignity/privacy).
+2. **hch_005 regressed**: the 7B base lost the suspension BRIDGE that the 2B
+   base had correctly described (both configs now say "sendero empinado"
+   [steep path]); the action extractor returned "(ninguna persona)" once
+   despite two people in frame (small figures). The 7B base is better on
+   average, not uniformly.
+3. Local config: one meta-language violation slipped through ("No hay
+   evidencia de vestimenta tradicional..." in hch_008's caption), and it
+   still almost never stops voluntarily (19/20 hit the cap; gemini: 11/20
+   stopped, 6 of them after one round — the no-repetition rule works for
+   gemini, not for the 7B).
+4. hch_018 unchanged: still "burro" vs gold's horse; genuinely ambiguous
+   animal.
+
+## Related work for the v3/v4 architecture (verified citations, 2026-07-29)
+
+The interrogation loop and the verification gate each have named ancestry;
+cite them rather than describing the architecture from scratch.
+
+**Interrogation loop (v4/v4.1/v4.2) = the ChatCaptioner pattern.**
+- Zhu et al. 2023, *ChatGPT Asks, BLIP-2 Answers: Automatic Questioning
+  Towards Enriched Visual Descriptions*, arXiv:2303.06594 — LLM questioner +
+  VLM answerer, multi-round, summarize into a caption. VERIFIED. Crucially,
+  its own error analysis already contains our headline problem in embryo:
+  ~80% caption correctness, BLIP-2 answers only ~67% of questions correctly,
+  and **94% of incorrect captions are attributed to the answerer's wrong
+  answers** (they add an "uncertainty prompt" as mitigation). Cite this
+  self-reported number as the anticipation of our protected-fact-laundering
+  finding — our audit contributes the *mechanism* (presupposition-embedding
+  questions launder base-caption hallucinations into "verified" claims; the
+  wheelchair/drum case) and the fix (verify-the-base-first, neutral
+  phrasing, answers-outrank-base).
+- Chen et al. 2023, *Video ChatCaptioner: Towards Enriched Spatiotemporal
+  Descriptions*, arXiv:2304.04227 — same pattern across video frames.
+  VERIFIED.
+- You et al. 2023, *IdealGPT: Iteratively Decomposing Vision and Language
+  Reasoning via Large Language Models*, arXiv:2305.14985, Findings of EMNLP
+  2023 — LLM generates sub-questions, VLM answers, LLM reasons, ITERATES
+  UNTIL CONFIDENT — the precedent for our multi-pass with voluntary
+  self-stop. VERIFIED. (Note: contrary to an earlier draft claim, IdealGPT
+  does NOT criticize ChatCaptioner's detail-vs-correctness trade-off; its
+  mention is neutral. Do not cite it for that.)
+
+**Verification gate (v3, carried into v4.2) = CoVe / Woodpecker.**
+- Dhuliawala et al., *Chain-of-Verification Reduces Hallucination in Large
+  Language Models*, arXiv:2309.11495, Findings of ACL 2024 — draft → plan
+  verification questions → answer them INDEPENDENTLY of the draft → final
+  verified response. Our SI/NO/INCIERTO gate is CoVe's core move ported to
+  vision. VERIFIED.
+- Yin et al. 2023, *Woodpecker: Hallucination Correction for Multimodal
+  Large Language Models*, arXiv:2310.16045 — training-free post-hoc
+  pipeline: key-concept extraction → question formulation → visual knowledge
+  validation → claim generation → correction. v3's
+  extract-diagnostic-claim → closed-question → splice is functionally this,
+  applied at generation time rather than post-hoc. VERIFIED.
+
+**Lineage origin:** visually grounded dialogue as 20-questions — de Vries et
+al., *GuessWhat?!*, CVPR 2017, arXiv:1611.08481 (questioner asks yes/no
+questions of an oracle to locate an object) and Das et al., *Visual Dialog*,
+CVPR 2017, arXiv:1611.08669. One sentence in the intro.
+
+**Our citable deltas (what none of the above does):**
+1. **Verification is capability-gated, and we measure the gate**: the decoy
+   control (2B: 6/8 false SI incl. contradicting its own rationale; 82/82 SI
+   in a full production run — vs local 7B: 8/8 correct NO, 3/4 SI + justified
+   INCIERTO on true claims). None of ChatCaptioner/Woodpecker/CoVe
+   characterizes WHERE verification capacity turns on; they assume a
+   frontier-scale verifier. This motivates the asymmetric pair (small
+   captioner, 7B verifier) as the minimal honest local configuration.
+2. **Retrieval-grounded questioning**: our questioner draws candidate
+   concepts from a culture-specific Wikipedia bank with a hard similarity
+   floor, so questions verify *retrieved cultural hypotheses* rather than
+   express open curiosity — and the floor is load-bearing (removing it
+   reintroduced fabrication: the Sierra-Madre-from-a-0.21-snippet case).
+3. **Deployment setting**: indigenous-language cultural captioning under
+   data-sovereignty constraints — the fully-local instantiation (7B
+   questioner/answerer, nothing leaves the device) is the point, not an
+   ablation.
 
 ## Draft limitations paragraphs (adapt freely)
 
