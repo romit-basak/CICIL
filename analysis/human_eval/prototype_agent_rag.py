@@ -98,6 +98,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
 import re
 from pathlib import Path
 
@@ -380,6 +381,11 @@ def main() -> None:
                              "5 dev cases -- the pilot has gold Spanish, so "
                              "per-round captions give a measured "
                              "quality-vs-rounds curve")
+    parser.add_argument("--dev-sample", type=int, default=0, metavar="N",
+                        help="run N seeded-random dev images per non-wixarika "
+                             "culture (guarani/maya/bribri/nahuatl) -- the "
+                             "round-4 cross-culture arm. Dev has no Spanish "
+                             "gold, so these rows are human-eval only")
     parser.add_argument("--out-jsonl", type=Path, default=None,
                         help="append one record per image (base, ocr, per-round "
                              "qa + captions, final) for scoring/auditing")
@@ -414,6 +420,14 @@ def main() -> None:
         cases = [(args.culture, args.image.stem)]
     elif args.pilot:
         cases = [("wixarika", e.id) for e in load_split("wixarika", "pilot")]
+    elif args.dev_sample:
+        # Same seed as build_round4_pilot so the sample is reproducible.
+        rng = random.Random(20260731)
+        cases = []
+        for culture in ("guarani", "maya", "bribri", "nahuatl"):
+            ids = sorted(e.id for e in load_split(culture, "dev"))
+            cases.extend((culture, i)
+                         for i in sorted(rng.sample(ids, args.dev_sample)))
     else:
         cases = CASES
 

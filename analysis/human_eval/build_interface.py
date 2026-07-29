@@ -58,17 +58,18 @@ def load_items(suffix: str = "", split: str = "dev") -> list[dict]:
     # images/<lang>/) and a hardcoded template silently pointed at the wrong
     # one for round 3 (pilot). One shared resolver means this can't drift again.
     from src.stage1.data_io import load_split
-    paths_cache: dict[str, dict[str, Path]] = {}
+    paths_cache: dict[tuple[str, str], dict[str, Path]] = {}
 
-    def resolve_image_src(fname: str, lang_dir: str) -> str:
-        if lang_dir not in paths_cache:
-            paths_cache[lang_dir] = {ex.image_path.name: ex.image_path
-                                     for ex in load_split(lang_dir, split)}
-        abs_path = paths_cache[lang_dir].get(fname)
+    def resolve_image_src(fname: str, lang_dir: str, row_split: str) -> str:
+        key = (lang_dir, row_split)
+        if key not in paths_cache:
+            paths_cache[key] = {ex.image_path.name: ex.image_path
+                                for ex in load_split(lang_dir, row_split)}
+        abs_path = paths_cache[key].get(fname)
         if abs_path is None:
             # Fall back to a guessed path so the browser's onerror message is
             # still informative about what was looked for.
-            return f"../../data/americasnlp2026/data/{split}/{lang_dir}/images/{fname}"
+            return f"../../data/americasnlp2026/data/{row_split}/{lang_dir}/images/{fname}"
         return os.path.relpath(abs_path, start=HERE)
 
     items = []
@@ -76,11 +77,14 @@ def load_items(suffix: str = "", split: str = "dev") -> list[dict]:
         fname = row["image_filename"]  # keep exact case (bzd_042.JPG)
         prefix = fname.split("_")[0]
         lang_dir = LANG_DIR[prefix]
+        # Rounds mixing splits (round 4: wixarika pilot + cross-culture dev)
+        # carry a per-row split column; earlier rounds fall back to --split.
+        row_split = row.get("split") or split
         item = {
             "sample_id": sid,
             "language": row["language"],
             "image_filename": fname,
-            "image_src": resolve_image_src(fname, lang_dir),
+            "image_src": resolve_image_src(fname, lang_dir, row_split),
             "caption_A": row["caption_A"],
             "caption_B": row["caption_B"],
             "english_A": english[sid]["english_A"],
@@ -279,7 +283,7 @@ function render() {{
     <div class="card">
       <img class="eval" src="${{it.image_src}}"
            onerror="this.outerHTML='<div class=imgerr>Image not found at <code>${{it.image_src}}</code>.<br>The dataset must be checked out at <code>data/americasnlp2026/</code> in this repo (it is gitignored — download it separately).</div>'">
-      ${{it.gold_english ? `<div class="cap cap-gold"><span class="lbl">Gold reference (real human-written caption — for fact-checking; do not score)</span>${{esc(it.gold_english)}}</div>` : ""}}
+      ${{it.gold_english ? `<div class="cap cap-gold"><span class="lbl">Gold reference (real human-written caption — context, not the answer key: it may name events/places NOT visible in the image; judge captions against the image)</span>${{esc(it.gold_english)}}</div>` : ""}}
     </div>
     <div class="card">
       ${{refBlock(it, sid, saved)}}

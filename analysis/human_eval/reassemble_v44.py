@@ -37,7 +37,8 @@ from pathlib import Path
 
 from analysis.human_eval.prototype_agent_rag import (
     CULTURE_NAMES_ES,
-    call_gemini_raw,
+    call_gemini_raw,  # noqa: F401 -- via make_llm_call("gemini", ...)
+    make_llm_call,
     scrub_meta,
 )
 
@@ -127,6 +128,10 @@ def main() -> None:
                              "the Argentine-dress probe ('traje guasú', a "
                              "fabricated garment name introduced by an ANSWER, "
                              "asserted as fact by the v4.3/v4.4 assemblers)")
+    parser.add_argument("--llm", default="gemini", choices=["gemini", "ollama"],
+                        help="assembler LLM: gemini, or ollama (qwen2.5:7b) so "
+                             "the fully-local arm's finals stay fully local")
+    parser.add_argument("--ollama-model", default="qwen2.5:7b")
     parser.add_argument("--two-stage", action="store_true",
                         help="v4.4b: adjudicate disputed points into a resolved-"
                              "facts list first, then caption from the facts "
@@ -138,6 +143,9 @@ def main() -> None:
     ensure_vertex_credentials()
 
     suffix = "_v45" if args.v45 else ("_v44b" if args.two_stage else "_v44")
+    if args.llm == "ollama":
+        suffix += "-local"
+    llm_call = make_llm_call(args.llm, args.ollama_model)
     banks: dict = {}
     if args.v45:
         from src.stage1.rag_context import TextBank
@@ -169,16 +177,16 @@ def main() -> None:
                                           for h in hits) or "- (ninguno: no nombres ningún concepto cultural específico)"
                     prompt = ASSEMBLER_PROMPT_V44.format(**common) + WHITELIST_RULE.format(
                         whitelist=whitelist, culture_name=common["culture_name"])
-                    final = scrub_meta(call_gemini_raw(prompt))
+                    final = scrub_meta(llm_call(prompt))
                     record.update(version="v4.5-whitelist", final=final,
                                   whitelist=[h["title"] for h in hits])
                 elif args.two_stage:
-                    facts = call_gemini_raw(ADJUDICATION_PROMPT.format(**common))
-                    final = scrub_meta(call_gemini_raw(CAPTION_FROM_FACTS_PROMPT.format(
+                    facts = llm_call(ADJUDICATION_PROMPT.format(**common))
+                    final = scrub_meta(llm_call(CAPTION_FROM_FACTS_PROMPT.format(
                         culture_name=common["culture_name"], facts=facts)))
                     record.update(version="v4.4b-two-stage", facts=facts, final=final)
                 else:
-                    final = scrub_meta(call_gemini_raw(ASSEMBLER_PROMPT_V44.format(**common)))
+                    final = scrub_meta(llm_call(ASSEMBLER_PROMPT_V44.format(**common)))
                     record.update(version="v4.4-reassembly", final=final)
                 out.write(json.dumps(record, ensure_ascii=False) + "\n")
                 out.flush()

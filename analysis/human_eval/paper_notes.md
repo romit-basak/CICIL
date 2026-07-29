@@ -984,6 +984,54 @@ CVPR 2017, arXiv:1611.08669. One sentence in the intro.
    questioner/answerer, nothing leaves the device) is the point, not an
    ablation.
 
+## Gold captions encode non-visual context (2026-07-29) — the reference style caps faithful captioning and rewards fabricated context
+
+Reading all 20 wixárika pilot gold captions against their images: **~13 of 20
+contain information that is not discernible from the image content** —
+community-authored insider knowledge of event, purpose, season, or custom.
+Representative cases (EN glosses mine):
+
+- hch_002: "Toros de reparo descansando antes de que comience el jaripeo."
+  (*Bucking bulls resting before the jaripeo [rodeo] begins.*) Nothing in the
+  frame identifies a rodeo — only a tent-like structure compatible with many
+  events.
+- hch_005: "Madre wixarika llevando a su hija a la escuela... por la crecida
+  de río." (*Wixárika mother taking her daughter to school... because the
+  river has risen.*) Destination and cause are invisible.
+- hch_007: "...para hacer nixtamal" (*...to make nixtamal*) — purpose, not
+  appearance.
+- hch_018: "se le conoce como (Remuda), se usa como medio de transporte en
+  caminos... de difícil acceso" (*known as "Remuda", used as transport on
+  hard-to-access paths*) — encyclopedic usage note, Wikipedia-caption style
+  ("photo taken at X by Y").
+
+Also in this class: hch_001 (general knowledge about suspension bridges),
+hch_004 (going to work the papaya harvest), hch_006/hch_016 (season),
+hch_009/hch_010/hch_013 (usage/purpose/future practice), hch_012 (prior
+event: "after washing her clothes"), hch_019 (rarity commentary).
+
+Three consequences worth a paragraph in the paper:
+
+1. **A structural ceiling on reference-based metrics for faithful systems.**
+   Tokens like *jaripeo*, *nixtamal*, *temporada de lluvia* cannot be
+   produced by any captioner that reports only what is visible — no matter
+   how good. Part of the gap between every arm (~21.5 ChrF++) and gold is
+   unbridgeable from pixels; even gemini-direct tops out at 22.71. This is
+   the flip side of the metric-blindness finding: ChrF++ both ignores
+   faithfulness fixes AND penalizes faithfulness itself.
+2. **The reference style rewards fabricating plausible context.** The
+   baseline's invented "Nayarit, México" and "Sierra Madre Occidental" are
+   the degenerate strategy this reference distribution encourages: guessing
+   insider context sometimes pays in overlap, and honest silence never does.
+   Our anti-hallucination rules deliberately refuse those points.
+3. **It reframes what "cultural captioning" is.** The gold captions are what
+   the community *knows about* the scene, not what the scene *shows*. The
+   principled way to close that gap is supplying real context (retrieval,
+   metadata, community input) — not asking the VLM to hallucinate it. This
+   is an argument FOR the retrieval-grounded architecture, and for human
+   eval judged against the image (round-4 interface labels the gold as
+   "context, not the answer key").
+
 ## Draft limitations paragraphs (adapt freely)
 
 > Our caption assembler is prohibited from identifying photographed
