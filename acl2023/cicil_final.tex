@@ -412,6 +412,42 @@ captions naming a specific cultural concept (artifact, dance, site).}
 Retrieval therefore succeeds at increasing cultural specificity even when
 chrF++ remains nearly unchanged.
 
+\subsection{End-to-End Task Results}
+Table~\ref{tab:endtoend} reports end-to-end chrF++ against the target-language
+references (50 dev images per language; Stage-2 translation with $k{=}5$
+retrieved demonstrations, temperature 0.7, fixed seed).
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Language & Generic & +RAG & Distill & Teacher \\
+\midrule
+Guaraní   & 19.35 & 19.44 & 19.31 & \textbf{21.04} \\
+Wixárika  & 13.18 & 13.34 & 13.17 & \textbf{15.03} \\
+Maya      & \textbf{19.48} & 18.52 & 18.50 & 17.65 \\
+Nahuatl   & \textbf{15.89} & 15.34 & 15.05 & 14.92 \\
+Bribri    & 6.81  & \textbf{8.00} & 7.31 & 7.07 \\
+\bottomrule
+\end{tabular}
+\caption{End-to-end chrF++ on dev (target language, $n{=}50$ per language).
+Generic = SmolVLM-2B without retrieval; +RAG = the same student with
+retrieval; Distill = the RAG-distilled student; Teacher = 7B Qwen2.5-VL with
+retrieval.}
+\label{tab:endtoend}
+\end{table}
+
+The pattern is heterogeneous. The 7B teacher with retrieval gains
+substantially on Guaraní ($+1.69$) and Wixárika ($+1.85$); the retrieval
+student gains most where resources are thinnest (Bribri $+1.19$, the largest
+student-side gain); and Maya and Nahuatl lose about one point under
+retrieval---exactly the two languages where the concept rate stayed at
+0--1 of 50 (Table~\ref{tab:rates}), so retrieval added noise without a
+concept payoff. Set against the order-of-magnitude changes in cultural
+specificity, these movements are small: the metric and the behavior have
+largely decoupled.
+
 \subsection{Capability Ladder}
 Wixárika pilot results across system versions:
 
@@ -446,17 +482,20 @@ The remaining gap to frontier performance is roughly 1--1.5 chrF++.
 
 \paragraph{RQ1: Does cultural grounding help?}
 Cultural prompting alone does not improve end-to-end performance. Retrieval
-substantially increases cultural specificity but produces limited metric
-gains. Human evaluation suggests that cultural prompting yields marginally
-richer cultural descriptions at the cost of slight reductions in
-faithfulness.
+substantially increases cultural specificity (Table~\ref{tab:rates}) but
+produces limited and language-dependent metric gains
+(Table~\ref{tab:endtoend}). Human evaluation suggests that cultural prompting
+yields marginally richer cultural descriptions at the cost of slight
+reductions in faithfulness.
 
 \paragraph{RQ2: Resource effects.}
 Resource disparities appear throughout the pipeline. Bribri has the smallest
-retrieval resources and remains difficult across all systems. However,
-retrieval produced some of the largest relative gains in cultural concept
-rates, suggesting that low-resource settings may benefit disproportionately
-when even modest external knowledge becomes available.
+retrieval resources and remains difficult across all systems, yet it shows
+the largest student-side end-to-end gain under retrieval ($+1.19$ chrF++)
+alongside some of the largest gains in cultural concept rates---inverting
+the naive expectation that retrieval helps most where data is plentiful.
+Low-resource settings may benefit disproportionately when even modest
+external knowledge becomes available.
 
 \paragraph{RQ3: Which cultural concepts ground reliably?}
 Artifacts and distinctive cultural objects appear most retrievable. Landscape
@@ -464,6 +503,54 @@ concepts proved much harder: several initially promising examples collapsed
 under manual audit because retrieval supplied plausible but unsupported
 regional labels. This finding motivated stricter auditing procedures and
 highlights the danger of equating concept naming with genuine grounding.
+
+\paragraph{What the metric cannot see.}
+Across the interrogation arm's development we closed six distinct
+faithfulness failure classes---each confirmed by manual audit against the
+images---and chrF++ moved by less than half a point in either direction at
+every step (Table~\ref{tab:ladder}). The converse also holds: the Verify-RAG
+configuration gained two chrF++ points from a 2B verifier that we later
+showed accepts every claim it is asked (\S4.4), and degenerate repetition
+loops still scored nontrivially. On this benchmark, reference overlap and
+caption faithfulness have effectively decoupled; we therefore treat chrF++
+as a sanity check rather than an objective, and rest the system comparison
+on specificity rates, audits, and human evaluation.
+
+\paragraph{Failure modes found only by auditing.}
+Manual inspection of full interrogation transcripts surfaced failure classes
+that no aggregate metric flagged. Verification questions that presuppose a
+base-caption detail can launder that detail into a ``verified'' claim
+(the answerer confirms the presupposition rather than checking it);
+one-word verdicts can contradict their own rationales, and assembly that
+trusts verdicts over rationales inherits the error; and the answer channel
+can inject fabricated cultural vocabulary that retrieval never supplied---in
+one out-of-domain probe the answerer invented a garment name that does not
+exist, which the assembler then asserted as fact. Each class was fixed
+structurally (question phrasing constraints, rationale-over-verdict
+aggregation, and restricting cultural naming to retrieved vocabulary)
+rather than by adding prompt instructions, which we found do not reliably
+bind. One residual remains: when the same model writes the base caption and
+answers the verification questions, its perceptual errors self-confirm.
+ChatCaptioner's error analysis attributes 94\% of its incorrect captions to
+the answerer \citep{zhu2023chatcaptioner}; our audits show the failure
+persists even with verification in the loop, and independent witnesses are
+the natural next step.
+
+\paragraph{Gold captions describe more than the image.}
+Reading the 20 Wixárika pilot references against their images, roughly
+two-thirds contain community knowledge that is not visually discernible:
+event context (``bulls resting \emph{before the jaripeo begins}''), purpose
+(``degraining maize \emph{to make nixtamal}''), destination and cause
+(``taking her daughter \emph{to school} because the river has risen''), or
+encyclopedic usage notes. This has two consequences beyond the obvious
+ceiling on image-only systems. First, the reference style rewards
+\emph{fabricating} plausible context: a baseline that invents a plausible
+region name can gain overlap where honest silence cannot, so the metric
+points away from faithfulness. Second, it reframes the task itself: the
+gold captions record what the community knows about a scene, not what the
+scene shows---and the principled way to close that gap is to supply real
+context (retrieval, metadata, community input) rather than to ask a vision
+model to guess it.
 
 \section{Conclusion}
 We presented a retrieval-grounded cultural image captioning pipeline for
@@ -502,11 +589,9 @@ community members nor speakers of the target languages. Cultural judgments
 should therefore be interpreted as measurements of specificity rather than
 definitive correctness.
 
-Fifth, gold captions frequently contain nonvisual contextual knowledge.
-Approximately two-thirds of the Wixárika pilot references include information
-such as event purpose, seasonal context, or community-specific background
-that cannot be inferred directly from pixels. This imposes a structural
-ceiling on image-only captioning systems.
+Fifth, gold captions frequently contain nonvisual contextual knowledge
+(\S6), which imposes a structural ceiling on image-only captioning systems
+and complicates reference-based evaluation.
 
 Finally, we did not conduct target-language human evaluation due to the
 absence of available native-speaker annotators during the project period.
