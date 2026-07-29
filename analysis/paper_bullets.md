@@ -42,6 +42,14 @@ the bottom.
   cultural awareness; informs why we fine-tune the decoder (LoRA) not the encoder.
 - English-pivot human evaluation: Hendy et al. 2023 (arXiv:2302.09210), Kocmi et al.
   WMT23 (ES→EN reliability) — justifies the eval protocol (`analysis/human_eval/RUBRIC.md`).
+- **Multi-agent arm lineage (verified cites in paper_notes §related-work):**
+  ChatCaptioner (2303.06594 — reports 94% of its errors come from the answerer,
+  matching our self-confirmation finding), Video ChatCaptioner (2304.04227),
+  IdealGPT (2305.14985), Woodpecker (2310.16045), CoVe (2309.11495), Visual
+  Dialog (1611.08669) / GuessWhat?! (1611.08481). Our deltas: (1) questions
+  grounded in *retrieved cultural context*, not open chat; (2) verification
+  shown capability-gated (2B vs 7B decoy controls); (3) sovereignty constraint
+  (image never leaves the machine) as a design axis.
 - (Person D/team: retrieval-augmented MT, low-resource MT for Guaraní/Bribri, ChrF++.)
 
 ## 3. Method
@@ -73,6 +81,34 @@ the bottom.
   deployment-style retrieval context (self-matches excluded from CBIR); student
   trains on prompts that byte-match inference. Tests whether the student's
   context-blindness (pilot finding) is fixable by training.
+
+### 3.2b Multi-agent interrogation arm (v4 series, 2026-07-28/29 — now the Stage-1 headline; full arc in `analysis/human_eval/paper_notes.md`)
+- Architecture (ChatCaptioner-style, culturally grounded): 7B VLM writes a base
+  caption → text retrieval over it (hard ≥0.30 floor **in code** — prompt-only
+  rules didn't bind) → LLM questioner frames closed SI/NO/INCIERTO *visual*
+  questions from the retrieved snippets → VLM answers looking at the image →
+  LLM assembler writes the final under aggregation rules. Multi-pass (batches
+  of 1–3 questions, ≤5 rounds), per-round captions recorded (single-pass
+  baseline for free + hallucination provenance). `prototype_agent_rag.py`.
+- **Why an interrogator at all — verification is capability-gated** (measured):
+  the 2B's SI/NO verdict token is pure yes-bias (82/82 SI in production; 6/8 SI
+  on planted decoys, contradicting its own truthful rationales); the local 7B
+  (qwen2.5vl, Ollama) discriminates cleanly (8/8 NO on decoys). Verification
+  crosses the capability threshold *locally* — no API needed.
+- **Sovereignty ladder**: every rung runs with the raw image never leaving the
+  machine; Gemini (text-only questioner) is optional and matched by the fully
+  local config.
+- Six leak classes found by manual audit → fixed structurally (v4.2–v4.5):
+  protected-fact laundering; verdict-over-rationale aggregation; never-name-
+  individuals (w/ adversarial museum-label composite test); parametric
+  injection via the answer channel ("traje guasú", a fabricated garment name →
+  v4.5 retrieval-whitelisted naming); in-prompt example leakage (v4.3.1);
+  meta/flourish scrubbing in code. Two-stage adjudicate-then-write (v4.4b)
+  REJECTED — amplifies rationale noise.
+- Residual (limitations): answerer==base-writer self-confirmation (hch_005
+  bridge — perception, not aggregation; needs an independent third opinion);
+  prompt-stacking instability (~10 prose guardrails → stochastic compliance —
+  argument that structural enforcement beats prose rules).
 
 ### 3.3 Stage 2 — culturally-indexed retrieval + Gemini
 - FAISS over 5 real banks (Dataset/: guarani 15,494; nahuatl 16,119; maya 14,332
@@ -163,6 +199,21 @@ the bottom.
 - Root cause (verified in code): Stage 1 never received the culture label → 7%
   culture-term rate corpus-wide → the RAG work is the direct fix (arc!).
 
+### 5.5b Agent arm: capability ladder + metric blindness (wixárika pilot, ChrF++ vs gold Spanish; `paper_notes.md` §capability-ladder)
+- smolvlm-rag 18.44 → ragdistill 18.79 → smolvlm-verify 20.50 (**for the wrong
+  reason** — pure yes-bias, see decoy controls) → 7B base 21.47–21.75 → agent
+  v4.2 21.73 / v4.3-local 21.70 / v4.3 gemini 21.27 / v4.4 21.24 / v4.5 21.47 →
+  **gemini-direct ceiling 22.71**. (⏳ v4.3.1 + v4.5-local finals tonight.)
+- The paper's evaluation argument: ChrF++ is **flat across every faithfulness
+  fix** (six leak classes closed, score unmoved) — and the ceiling is low
+  because ~13/20 gold captions encode NON-VISUAL context (jaripeo, nixtamal,
+  "taking her daughter to school"; `paper_notes.md` §gold-captions). The metric
+  both ignores faithfulness and rewards fabricating plausible context (the
+  baseline's invented "Nayarit" is the degenerate strategy it encourages).
+- Sovereignty price: fully-local matches hybrid (21.70 vs 21.27–21.73); cost vs
+  the send-the-image ceiling ≈ 1–1.5 ChrF++ + a handful of 7B scene-parse
+  errors (bridge/horse/guaje).
+
 ### 5.5 Stage 2 findings (Person C/Mehek section, our data)
 - Bank domain mismatch: real 9,940-pair Wixárika bank scored *worse* (8.22) than a
   20-pair in-domain placeholder — domain match beats scale for few-shot retrieval.
@@ -248,7 +299,11 @@ quoting (the human eval found wrong years fabricated from posters before).
 
 ## ⏳ STILL PENDING (not blocked on our runs)
 - **Mehek's sweep tables** (k ablation, query-arm; + smolvlm-rag sweep after pull).
-- **κ** from Tisha's second annotation pass; until then single-annotator caveat.
+- **κ**: rounds 1–3 stay single-annotator (diagnostic; Tisha's partial round 3
+  abandoned by design). κ comes from **round 4** (rebuilt tonight: 40 images,
+  5 cultures, smolvlm-rag vs agent-local v4.5 finals) — Romit + Tisha both
+  annotate tomorrow morning; `score_results --suffix _round4`.
+- **v4.3.1 numbers + v4.5-local finals** (tonight's runs) → §5.5b placeholders.
 - **Per-category (4 VQA categories) breakdown** — cheap script over the
   cultural_annotations fields if time permits (RQ3 depth).
 - **Budget line**: ~$8 L4 (9h incl. debugging) + ~$5 Gemini total; ~$8 GCP credit
