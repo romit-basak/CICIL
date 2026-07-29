@@ -392,6 +392,195 @@ distillation of the reasoning behavior specifically (distinct from the
 calibration distillation already done, which didn't include this kind of
 explicit multi-step reasoning in training).
 
+## Prototype v2: targeted pattern/symbol VQA question (2026-07-28) — stronger, supersedes v1 above
+
+Refinement of the prototype above: instead of one open-ended verbose
+description (risk: more surface area to hallucinate across many axes at
+once), add ONE new targeted question to the existing 4-category VQA bank,
+asked on its own rather than bundled: *"¿Qué patrones, símbolos o diseños
+geométricos se observan..., si los hay?"* — explicitly inviting "none" as a
+valid answer. Retrieval query = only this answer (not all 5 categories
+joined, which dilutes the signal). Synthesis reuses the REAL, already-tested
+`format_synthesis_rag` unmodified (`analysis/human_eval/
+prototype_vqa_rag.py`) — closer to a real pipeline addition than v1's
+custom reasoning prompt, and it shows: no prompt-scaffolding leakage this
+time (v1's bzd_042 bug did not recur).
+
+**Two confirmations, one new positive result:**
+- **grn_019: retrieval confirmed AGAIN, via a cleaner mechanism.** Targeted
+  question → focused answer → Ñandutí retrieved at 0.47, top hit (v1: 0.51 via
+  the verbose blob). Two independent retrieval methods now agree text search
+  reliably finds this concept. Synthesis still doesn't name it — same
+  bottleneck as v1, now confirmed twice, strengthening the claim that this is
+  specifically a synthesis/naming problem, not a retrieval-design problem.
+- **hch_021 and bzd_042: fabrication genuinely avoided this time.** Both
+  correctly answered "no patterns visible," both got appropriately weak/
+  scattered retrieval (<0.30, no coherent top hit), and — the key result —
+  **neither final caption asserted a specific wrong claim.** Direct three-way
+  comparison on hch_021: image-CBIR → "Wirikuta" (false, retracted);
+  v1 verbose-reasoning → "Sierra Madre Oriental" (also almost certainly false);
+  v2 targeted-VQA → "área montañosa" (honest, no unsupported specific claim).
+  Explicitly inviting a null answer, then querying retrieval on that null
+  answer, appears to be a real, working guard against the "low-confidence
+  retrieval gets used anyway" failure v1 exhibited — likely because a genuine
+  negative answer produces a genuinely weak query, whereas v1's verbose
+  description still contained enough real (if unhelpful) descriptive content
+  to retrieve *something* plausible-sounding.
+
+**Updated framing for the paper — v2 is the recommended future-work
+direction, not v1**: retrieval-side, a targeted, null-permitting VQA question
+beats an open verbose description on both counts that matter (finds the same
+concepts, avoids more fabrication). The synthesis bottleneck is now confirmed
+by two independent experiments to be the harder, more durable problem: even
+with an unambiguous top retrieval hit ("imita el diseño de la telaraña"
+sitting directly in front of the model), prompting alone doesn't reliably
+produce the naming step. This mirrors the project's own hedging-calibration
+finding almost exactly (prompting didn't fix it either; RAG-aware
+distillation did) — the natural next experiment, if pursued, is distilling
+this specific match-and-name behavior from teacher demonstrations, not
+prompting harder for it.
+
+## Prototype v3: verify, don't synthesize (2026-07-28) — breaks the naming bottleneck; supersedes v2 as the recommended direction
+
+v1 and v2 established that retrieval reliably finds the right concept and that
+open-ended synthesis reliably fails to name it. v3 removes open synthesis
+entirely (`analysis/human_eval/prototype_verify_rag.py`): (1) legible poster/
+sign text is extracted through a hardened four-step flow (closed SI/NO gate →
+transcribe → reject answers that narrate instead of quoting → closed
+"does the image contain exactly this text?" confirm) and spliced verbatim;
+(2) the v2 patterns question feeds text-RAG as before; (3) if the top hit
+clears a 0.40 score floor, the model is asked ONE closed verification question
+("Wikipedia says X is identified by [specific feature] — do you see this?
+SI/NO/INCIERTO"); (4) the final caption is assembled in Python — the concept
+is named only on SI, hedged on INCIERTO, omitted otherwise.
+
+**The headline result — grn_019 finally names ñandutí.** Three prototypes,
+same image, same correct retrieval every time; the two open-synthesis designs
+never said the word. The closed verification question got an explicit *"SI.
+La imagen muestra un objeto que parece ser un ñandutí..."* and the assembled
+caption reads *"...formando patrones geométricos y simétricos. posiblemente
+Ñandutí."* Converting the naming step from open generation to closed
+verification is the single change between v2 and v3, so this localizes the
+fix precisely: the 2B model can *verify* a match it cannot spontaneously
+*assert*. This mirrors the hedging-calibration finding (instructions inside a
+big synthesis prompt get ignored; a narrow, single-purpose query gets
+followed).
+
+**The null case still holds.** hch_021 (canyon): no patterns reported, top
+retrieval score 0.29 < 0.40 floor, verification skipped, final caption makes
+no unsupported specific claim. Three-way comparison stays as in v2.
+
+**The negative result — 2B OCR cannot be trusted even with self-verification.**
+grn_025 (Corrientes poster) was chosen to test whether a fact the model had
+previously read correctly ("Corrientes", "Mundial de Chamamé") survives when
+extracted once and locked. It does not: the dedicated transcription question
+produced a garbled near-miss, *"La Ciudad Unida Tiene Rito"* (actual poster:
+"LA CIUDAD TIENE RITMO"; an earlier run produced a different hallucination,
+"La Ciudad Unida Tiene Una Carretera" — so the error is not even stable), and
+the closed confirm step answered SI — the same model checking its own
+misreading learns nothing new. The four-step flow blocks *descriptive*
+non-answers from being spliced (the rejection filter caught one on grn_001 in
+the full run's first image) but cannot catch a *confidently wrong
+transcription*. Same image also shows persistent culture confusion ("traje
+típico mexicano" for Paraguayan/Guaraní dress) in the base description.
+Verification-by-the-same-model is a real but bounded guard: it fixes the
+match-naming step, it does not add perceptual capability the 2B model lacks.
+OCR-dependent facts need either a bigger model or an external OCR pass.
+
+**Status:** promoted to a full eval arm (`scripts/generate_verify_rag.py`,
+tag `smolvlm-verify`, drops the 4 unused diagnostic category calls, resumable,
+per-record `verify_rag` audit block) and run over all 5 dev languages + the
+wixárika pilot (gold Spanish available there → direct Stage-1-level ChrF++).
+
+## smolvlm-verify full run + verification controls (2026-07-28) — the verdict token is a rubber stamp; discrimination is a 2B→7B capability threshold
+
+The v3 design was promoted to a full arm (`scripts/generate_verify_rag.py`,
+tag `smolvlm-verify`) and run over all 5 dev languages + the wixárika pilot
+(270 images). Two results, one deceptive and one decisive:
+
+**Deceptively good:** best Stage-1 Spanish proxy score of any arm on the
+pilot — ChrF++ vs gold Spanish: verify **20.50** > ragdistill 18.79 > rag
+18.44. Do NOT cite this as verification value: 19/20 pilot images skipped
+verification (weak retrieval), so the gain mostly reflects plain generic base
+captions outscoring RAG-synthesis captions (consistent with the original
+verbose-synthesis-hurts-ChrF finding).
+
+**Decisive:** every verification that ran said SI — **82 SI, 0 NO,
+0 INCIERTO** across five languages ("Town and gown" for wixárika images,
+Guatemala parks for Yucatán ones). The 0.40 retrieval floor did all the
+filtering. Decoy control (asking about definitely-absent concepts): the 2B
+answered **6/8 SI**, including "SI. La imagen muestra un gato durmiendo..."
+to "do you see the Chichén Itzá pyramid?" — the verdict token contradicts the
+model's own truthful rationale in the same sentence. The same decoys on
+**qwen2.5vl:7b (local, ollama): 8/8 NO** with correct reasons; positive
+control (true claims): 3/4 SI plus one epistemically-justified INCIERTO.
+Verification works — but it is a capability threshold between 2B and 7B, and
+it is crossable locally, no API required. (The hardened 2B OCR locking also
+failed its stress test: a garbled near-miss transcription survived
+self-confirmation — the same model re-reading its own misreading learns
+nothing — and one full descriptive sentence slipped the reject filter.)
+
+## Prototype v4/v4.1: multi-agent interrogation (2026-07-28) — LLM questioner + 7B verifier; supersedes v3 as the recommended direction
+
+Architecture (`analysis/human_eval/prototype_agent_rag.py`): SmolVLM writes a
+generic base caption (cheap, local); an LLM questioner — pluggable: Gemini
+Flash (hybrid; only TEXT crosses the API, never the image) or qwen2.5:7b
+(fully local) — reads the base caption + retrieved per-culture Wikipedia
+snippets (hard code-level floor: score ≥ 0.30) and frames batches of 1–3
+closed, visually-answerable verification questions per round, up to a round
+cap, reacting to answers (NO redirects, SI earns a sharper follow-up);
+qwen2.5vl:7b answers them against the image (its verified skill; the 2B's
+verdicts are noise per the controls above); the questioner LLM assembles the
+final caption under preserve-observed-facts rules. v4.1 adds an OCR step
+asked of the 7B answerer, passed to questioner and assembler as a locked
+fact. A caption is assembled after EVERY round (read-only — the questioner
+never sees it), so one run yields the whole quality-vs-rounds curve, the
+round-1 caption doubles as a single-pass baseline, and any hallucination is
+pinned to the round where it entered (provenance, not post-hoc forensics).
+
+Key qualitative results on the 5 probe cases:
+- **grn_025 = the original motivating goal, achieved.** OCR read the poster
+  nearly verbatim (MUNDIAL DE CHAMAMÉ / LA CIUDAD TIENE RITMO / COSTANERA
+  SUR / CORRIENTES); Gemini-config final: *"Una mujer con traje tradicional y
+  pañuelo de ñandutí, con bordados que imitan telarañas, celebra el Mundial
+  de Chamamé 2013 en Costanera Sur, Corrientes, Argentina."* — concept named,
+  in-image location preserved, nothing fabricated; the questioner's stop
+  reason explicitly used the OCR to overrule the base caption's "traje
+  mexicano". The fully-local config also preserved Corrientes/Chamamé (missed
+  ñandutí). Caveat: the OCR'd year digit is unstable across runs (2013/2019
+  vs the real 2012) — hedge dates.
+- **Emergent cross-model correction:** the 7B answerer corrected the 2B base
+  caption's object error through the Q/A channel unprompted ("El gato no está
+  en un camión; está en una cama para mascotas"), and the questioner then
+  stopped with explicitly correct reasoning, yielding honest culturally-silent
+  captions for the no-cultural-content case — the exact behavior the human
+  eval's rubric couldn't even reward.
+- **Fabrication pressure moved but didn't vanish:** the Gemini questioner once
+  broke its own prompted score rule and built a leading question from a 0.21
+  snippet ("are there rock formations?" → inevitable SI → "Sierra Madre
+  Oriental" asserted). Prompt rules don't bind; the floor is now enforced in
+  code. The local questioner — less creative — behaved better on that case.
+- **Local questioner status:** qwen2.5:3b collapses in-loop (tautological
+  repeated questions, never stops, its assembler reasserted a rejected
+  cultural framing); qwen2.5:7b is serviceable (correct ñandutí probe,
+  Corrientes preserved, zero fabrications) with rough edges (occasional
+  repetition; two runs ended early on unparseable JSON — the conservative
+  default, so no damage, but interrogations truncate).
+
+Stage 1↔2 coupling note: Stage 2's "culturally-indexed" retrieval lives
+entirely in query construction (`retrieval.py:_cultural_annotation_query`
+joins the record's `cultural_annotations` values); the bank needs no
+redesign. v4 records can fill the same field with verified concepts + OCR
+(sharper query than four noisy paragraph answers). Prediction worth
+reporting: because v4 finals carry the concept name in surface text, the
+cultural-vs-text query-arm gap should shrink for this arm.
+
+Measured next (running): 20-image pilot curve, `--max-rounds 10`, both
+questioner configs, per-round ChrF++ vs gold Spanish
+(`analysis/human_eval/score_agent_curve.py`) — including whether the
+questioner's voluntary stop tracks the quality plateau (the deployable
+stopping rule).
+
 ## Draft limitations paragraphs (adapt freely)
 
 > Our human evaluation of cultural accuracy is bounded by annotator expertise:
