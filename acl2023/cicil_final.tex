@@ -1,0 +1,535 @@
+% CICIL 2026 — Final paper. Compile with:
+%   pdflatex cicil_final ; bibtex cicil_final ; pdflatex cicil_final ; pdflatex cicil_final
+%
+% Content drafted by Romit (2026-07-29) from analysis/paper_bullets.md +
+% analysis/human_eval/paper_notes.md. Factual corrections applied during
+% LaTeX conversion (each marked with a "FIXED:" comment at the site):
+%   - Wixárika has 50 dev images PLUS the 20-image gold-Spanish pilot
+%   - retrieval bank sizes updated to the actually-shipped banks
+%     (Guaraní 15,494 — MultiScript30k excluded on license grounds; Bribri 8,297)
+%   - caption-length column recomputed on dev (Nahuatl 8.3, Wixárika 17.0)
+%   - abstract culture-name range 18–37 (student) / 29–38 (teacher)
+% TODO-TONIGHT markers = numbers that land after the 2026-07-29 overnight runs.
+\pdfoutput=1
+\documentclass[11pt]{article}
+\usepackage{ACL2023}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{inconsolata}
+\usepackage{booktabs}
+\usepackage{graphicx}
+
+\title{Culturally-Aware Image Captioning for Indigenous Languages of the Americas:\\
+A Retrieval-Grounded and Verification-Oriented Vision-to-Translation Pipeline}
+
+\author{Romit Basak \and Mehak Santosh Talmale \and Nandita Mahendra \and Tisha Patel \\
+  Khoury College of Computer Sciences, Northeastern University \\
+  \texttt{\{basak.r, talmale.m, mahendra.na, patel.tisha\}@northeastern.edu}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Generic vision--language models (VLMs) frequently fail to preserve culturally
+specific information present in images, creating a bottleneck for multilingual
+image captioning systems targeting Indigenous languages. In the AmericasNLP
+2026 Cultural Image Captioning for Indigenous Languages (CICIL) shared task,
+captions are generated directly in Indigenous languages of the Americas from
+culturally situated images. Existing systems typically generate an
+intermediate Spanish caption with a generic VLM and then translate it using
+retrieval-augmented language models, but culturally salient visual concepts
+are often lost before translation begins. We investigate whether
+retrieval-grounded cultural reasoning can improve this stage.
+
+We present a two-stage captioning pipeline that augments vision processing
+with cultural retrieval and verification. Stage~1 uses structured cultural
+visual question answering (VQA), Wikipedia-derived retrieval, and a
+retrieval-grounded interrogation loop inspired by caption-questioning
+frameworks. Retrieved cultural hypotheses are verified through closed visual
+questions before being incorporated into Spanish descriptions. Stage~2
+performs culturally indexed retrieval over parallel corpora and translates
+the Spanish intermediate into the target language using Gemini~2.5~Flash.
+
+Across five Indigenous languages (Guaraní, Bribri, Yucatec Maya, Wixárika,
+and Nahuatl), retrieval substantially increases explicit cultural references,
+% FIXED: was "18–39"; student arm range is 18–37/50, teacher 29–38/50
+raising culture-name rates from near-zero to 18--37 of 50 dev captions
+(29--38 for a 7B teacher). However, corresponding chrF++ improvements are
+small and inconsistent. Through human evaluation, retrieval audits, decoding
+ablations, and extensive qualitative analysis, we show that standard
+reference-based metrics are largely insensitive to cultural correctness,
+hallucinations, retrieval-induced errors, and faithfulness improvements. We
+further demonstrate that verification ability is capability-gated: a 2B model
+fails as a verifier even under closed questioning, while a local 7B model
+reliably distinguishes true from false claims. Our results suggest that
+culturally grounded captioning is constrained less by translation quality
+than by cultural retrieval, verification capacity, and evaluation
+methodology.
+\end{abstract}
+
+\section{Introduction}
+The AmericasNLP 2026 Cultural Image Captioning for Indigenous Languages
+(CICIL) shared task \citep{bui2026cicil} asks systems to generate image
+captions directly in Indigenous languages of the Americas. Unlike
+conventional image captioning benchmarks, CICIL emphasizes cultural
+grounding: images depict artifacts, ceremonies, landscapes, and community
+practices that are often meaningful only within specific cultural contexts.
+
+The strongest systems in recent shared-task settings adopt a two-stage
+pipeline \citep{dhawan2026gators}. A vision--language model first produces an
+intermediate Spanish description, which is then translated through
+retrieval-augmented language models into the target language. While
+effective, this design inherits a fundamental limitation: any cultural
+information omitted in the Spanish intermediate cannot be recovered
+downstream.
+
+Our work starts from a simple observation. Culture recognition from pixels
+alone is an ill-posed inverse problem. Many visual motifs recur across
+unrelated traditions, geographic regions, and historical periods. Ñandutí
+lace patterns, for example, descend from broader Tenerife lace traditions and
+cannot always be uniquely identified from image evidence alone. Cultural
+attribution therefore requires not only visual evidence but also contextual
+priors. The CICIL dataset already provides one such prior through image-level
+cultural metadata, yet most existing pipelines do not incorporate this
+information into visual reasoning.
+
+We investigate whether retrieval-grounded cultural reasoning can improve
+culturally situated caption generation. Our initial experiments with cultural
+VQA prompting showed only marginal gains, motivating a stronger
+retrieval-based approach. We therefore introduce a retrieval-grounded
+captioning architecture in which external cultural knowledge is supplied at
+inference time and verified through visual questioning before entering the
+final caption.
+
+The paper addresses three research questions:
+
+\paragraph{RQ1:} Does culturally grounded Stage-1 processing improve caption
+quality compared with generic vision--language baselines?
+\paragraph{RQ2:} How does performance vary across languages with different
+resource availability?
+\paragraph{RQ3:} Which categories of cultural information are most difficult
+to ground reliably?
+
+Our contributions are:
+\begin{itemize}
+  \item A retrieval-grounded cultural captioning pipeline combining visual
+    reasoning, cultural retrieval, and verification.
+  \item Evidence that retrieval, rather than model scale alone, is the
+    primary constraint on cultural naming.
+  \item A capability analysis showing that verification emerges only above a
+    minimum model scale.
+  \item An empirical demonstration that chrF++ fails to reflect many
+    important dimensions of cultural caption quality.
+  \item Extensive qualitative analysis of retrieval failures, hallucinations,
+    calibration behavior, and evaluation limitations.
+\end{itemize}
+
+\section{Related Work}
+
+\subsection{Cultural Grounding in Vision--Language Models}
+Vision--language models inherit cultural biases from predominantly Western
+web-scale training data. CLIP-style contrastive pretraining
+\citep{radford2021clip} produces powerful multimodal representations but
+remains sensitive to geographic and cultural imbalances. Benchmarks such as
+MaRVL \citep{liu2021marvl} demonstrate large performance drops when visual
+reasoning is evaluated across cultures rather than within familiar
+English-centric settings.
+
+More recently, CulturalVQA \citep{nayak2024culturalvqa} and related
+benchmarks \citep{romero2024cvqa} have shown that state-of-the-art systems
+still struggle with culturally specific visual concepts. Fine-tuning
+approaches such as CultureCLIP \citep{huang2025cultureclip} improve cultural
+recognition through synthetic contrastive examples, but such methods require
+large curated image collections. Under CICIL's small-data constraints,
+prompting and retrieval become more practical alternatives.
+
+The CIC framework \citep{yun2024cic} introduced a VQA-before-captioning
+paradigm in which a model first identifies cultural elements and then
+synthesizes a caption. Our work adopts this idea but combines it with
+retrieval-grounded reasoning and downstream translation.
+
+\subsection{Cultural Retrieval}
+Retrieval-augmented systems have become increasingly important for
+low-resource NLP \citep{lewis2020rag}. Instead of requiring all knowledge to
+be encoded in model parameters, retrieval supplies relevant information
+dynamically at inference time.
+
+For cultural grounding, this distinction is particularly important. In our
+experiments, even a 7B teacher model rarely names cultures unaided, while
+retrieval dramatically increases culture naming rates. This suggests that
+cultural knowledge is not merely missing from smaller models but is
+insufficiently accessible even in larger ones.
+
+A key insight from our findings is that retrieval quality and retrieval usage
+are distinct. We observed examples where retrieval correctly retrieved
+relevant cultural material but the model copied irrelevant metadata instead
+of grounding itself in the image.
+
+\subsection{Interrogation and Verification}
+Our retrieval-grounded interrogation loop follows the ChatCaptioner family of
+approaches \citep{zhu2023chatcaptioner}, where an LLM asks questions and a
+vision model answers them before caption synthesis. Related work includes
+Video ChatCaptioner \citep{chen2023videochatcaptioner}, IdealGPT
+\citep{you2023idealgpt}, and visually grounded dialogue systems such as
+Visual Dialog \citep{das2017visualdialog} and GuessWhat?!
+\citep{devries2017guesswhat}.
+
+The verification component is closely related to Chain-of-Verification
+\citep{dhuliawala2024cove} and Woodpecker \citep{yin2023woodpecker}. However,
+unlike prior work, we explicitly measure \emph{when} verification works.
+
+A central finding of this paper is that verification itself is
+capability-gated. A 2B model answered ``yes'' to most verification prompts
+regardless of correctness, while a local 7B model reliably rejected false
+claims. Verification therefore appears to require a minimum level of visual
+reasoning capacity before verification-based pipelines become effective.
+Notably, ChatCaptioner's own error analysis already attributes 94\% of its
+incorrect captions to wrong answers from the answerer
+\citep{zhu2023chatcaptioner}; our results characterize where that answerer
+capacity turns on.
+
+\section{Data}
+% FIXED: Wixárika has a 50-image dev set like the other languages; the
+% 20-image pilot (with gold Spanish) is an ADDITIONAL split.
+The CICIL development data are extremely small: each of the five languages
+provides 50 development images. Wixárika additionally provides a 20-image
+pilot set that is uniquely valuable because it includes gold Spanish
+captions (mean 13.7 words), enabling direct evaluation of Stage~1.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+Language & Dev & Caption len. & Bank pairs \\
+\midrule
+Guaraní       & 50 & 21.6 & 15{,}494 \\
+Bribri        & 50 & 14.9 & 8{,}297 \\
+Yucatec Maya  & 50 & 11.3 & 14{,}332 \\
+Nahuatl       & 50 & 8.3  & 16{,}119 \\
+Wixárika      & 50$^{\dagger}$ & 17.0 & 9{,}940 \\
+\bottomrule
+\end{tabular}
+\caption{Development data and Stage-2 retrieval banks. ``Caption len.'' =
+mean gold target-caption length (words). $^{\dagger}$Plus a 20-image pilot
+set with gold Spanish captions. Banks are built from AmericasNLP shared-task
+corpora \citep{mager2021americasnlp,ebrahimi2023americasnlp}, the
+Wixárika--Spanish corpus \citep{mager2018wixarika}, and the YUA-ES
+Communicative Contexts Corpus \citep{molina2026yuaes}.}
+% FIXED: bank sizes were stale in the draft (Guaraní 53,183 → 15,494:
+% MultiScript30k is excluded on license grounds; Bribri 7,506 → 8,297).
+\label{tab:data}
+\end{table}
+
+Resource availability varies dramatically across languages
+(Table~\ref{tab:data}), creating a natural testbed for understanding how
+retrieval affects low-resource systems.
+
+\section{Method}
+
+\subsection{Stage 1: Cultural VQA}
+The original Stage~1 system decomposes image understanding into four cultural
+categories: (i)~ceremony and ritual, (ii)~material culture, (iii)~landscape
+and geography, and (iv)~kinship and community. A small VLM
+(SmolVLM-2B; \citealp{marafioti2025smolvlm}) answers category-specific
+questions and then synthesizes a Spanish description from the answers,
+following the VQA-before-captioning paradigm \citep{yun2024cic}.
+
+Our initial experiments revealed that verbose cultural explanations lower
+chrF++ because references are short. A constrained single-sentence synthesis
+restored performance while preserving cultural reasoning.
+
+\subsection{Retrieval-Grounded Cultural Context}
+We augment Stage~1 with two cultural retrieval channels.
+
+\paragraph{Image retrieval.} We construct SigLIP \citep{zhai2023siglip}
+embedding indices over culture-specific Wikimedia Commons image collections.
+Retrieved neighbors provide visual examples associated with the target
+culture.
+
+\paragraph{Text retrieval.} We build culture-specific Wikipedia knowledge
+banks and retrieve relevant passages using multilingual MiniLM embeddings
+\citep{reimers2020multilingual}. These passages serve as cultural context
+during synthesis.
+
+Retrieved evidence is associated with confidence bands: \emph{strong match}
+($\geq 0.80$ similarity) and \emph{possible match} ($0.55$--$0.80$). Only
+strong evidence supports direct assertions; possible matches are hedged
+explicitly.
+
+\subsection{Multi-Agent Interrogation}
+The final version of Stage~1 adopts a retrieval-grounded interrogation
+architecture:
+\begin{enumerate}
+  \item Generate a base caption.
+  \item Retrieve candidate cultural concepts.
+  \item Generate closed verification questions.
+  \item Answer questions using a VLM.
+  \item Assemble a final caption from verified evidence.
+\end{enumerate}
+The questioner and assembler are text-only LLMs; the answerer is a local 7B
+VLM (Qwen2.5-VL; \citealp{qwen2025qwen25vl}). This design transforms open
+cultural speculation into a sequence of verifiable claims.
+
+\subsection{Capability-Gated Verification}
+Verification performance differed dramatically by model size.
+
+The 2B model displayed extreme yes-bias, producing 82 affirmative responses
+out of 82 verification attempts. On planted decoys, it accepted clearly false
+claims and sometimes contradicted its own rationale.
+
+In contrast, a local 7B model correctly rejected all negative controls and
+successfully verified true positives.
+
+These results indicate that visual verification appears only above a
+capability threshold.
+
+\subsection{Stage 2 Translation}
+The final Spanish description is translated using retrieval-augmented
+Gemini~2.5~Flash \citep{comanici2025gemini}.
+
+We index parallel corpora using multilingual MiniLM embeddings and FAISS
+\citep{johnson2019faiss} and retrieve top-$k$ Spanish--Indigenous examples.
+Retrieved pairs are supplied as demonstrations during translation.
+
+Temperature 0.7 decoding was adopted after ablation experiments revealed
+severe degeneration under greedy decoding.
+
+\section{Results}
+
+\subsection{Stage 1 Evaluation}
+Using the Wixárika pilot's gold Spanish captions, we score Stage-1 Spanish
+intermediates with chrF++ \citep{popovic2017chrfpp}:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lr}
+\toprule
+Configuration & chrF++ \\
+\midrule
+Generic                 & 21.0 \\
+Cultural VQA (verbose)  & 16.2 \\
+Cultural VQA (concise)  & 20.9 \\
+\bottomrule
+\end{tabular}
+\caption{Spanish-side proxy evaluation (Wixárika pilot, $n{=}20$).}
+\label{tab:proxy}
+\end{table}
+
+Concise cultural prompting reaches parity with generic captioning while
+reducing internal inconsistencies.
+
+\subsection{Human Evaluation}
+Single-annotator results over 15 images (0--2 rubric per dimension), judged
+on English pivot translations of the Spanish captions
+\citep{hendy2023gpt,kocmi2023wmt}:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+Dimension & Generic & Cultural \\
+\midrule
+Cultural accuracy & 0.00 & 0.13 \\
+Faithfulness      & 1.73 & 1.53 \\
+Fluency           & 1.93 & 1.87 \\
+\bottomrule
+\end{tabular}
+\caption{Human evaluation of Stage-1 arms. Preference outcomes: tie 60\%,
+cultural preferred 27\%, generic preferred 13\%.}
+\label{tab:human}
+\end{table}
+
+% TODO-TONIGHT: round-4 human eval (40 images, 5 cultures, two annotators,
+% baseline vs agent-local v4.5 finals) + inter-annotator kappa land tomorrow
+% morning — add a second human-eval table here.
+
+The main conclusion is that cultural prompting alone generates slightly more
+cultural content but remains largely indistinguishable from generic
+captioning.
+
+\subsection{Decoding Ablation}
+Greedy decoding created severe repetition loops:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+Language & Degen.\ before & Degen.\ after \\
+\midrule
+Bribri   & 64\% & 28\% \\
+Wixárika & 86\% & 30\% \\
+\bottomrule
+\end{tabular}
+\caption{Degenerate-caption rate under greedy decoding (before) vs
+temperature 0.7 with fixed seed (after), 50 dev images per language.}
+\label{tab:decoding}
+\end{table}
+
+Switching to temperature-based sampling reduced degeneration dramatically and
+improved chrF++ without harming stronger languages.
+
+\subsection{Retrieval Results}
+Retrieval dramatically increases explicit cultural references
+(Table~\ref{tab:rates}).
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+\multicolumn{4}{c}{\textbf{Culture-name rate} (of 50)} \\
+Language & No RAG & RAG student & RAG teacher \\
+\midrule
+Guaraní   & 3 & 37 & 37 \\
+Wixárika  & 0 & 21 & 38 \\
+Maya      & 1 & 32 & 38 \\
+Nahuatl   & 1 & 18 & 29 \\
+Bribri    & 0 & 34 & 37 \\
+\midrule
+\multicolumn{4}{c}{\textbf{Concept rate} (of 50)} \\
+Language & No RAG & RAG student & \\
+\midrule
+Wixárika  & 0 & 24 & \\
+Bribri    & 5 & 25 & \\
+Guaraní   & 1 & 5  & \\
+Nahuatl   & 0 & 1  & \\
+Maya      & 0 & 0  & \\
+\bottomrule
+\end{tabular}
+\caption{Cultural specificity with and without retrieval. ``Culture-name
+rate'' counts captions naming the target culture; ``concept rate'' counts
+captions naming a specific cultural concept (artifact, dance, site).}
+\label{tab:rates}
+\end{table}
+
+Retrieval therefore succeeds at increasing cultural specificity even when
+chrF++ remains nearly unchanged.
+
+\subsection{Capability Ladder}
+Wixárika pilot results across system versions:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lr}
+\toprule
+System & chrF++ \\
+\midrule
+SmolVLM-RAG        & 18.44 \\
+RAG distill        & 18.79 \\
+Verify-RAG$^{*}$   & 20.50 \\
+Local 7B base      & 21.47--21.75 \\
+Agent v4.2         & 21.73 \\
+Agent v4.3 (local) & 21.70 \\
+% TODO-TONIGHT: add final agent row (v4.3.1 transcripts + v4.5 whitelist
+% aggregation, fully local) when tonight's runs land.
+Gemini direct      & 22.71 \\
+\bottomrule
+\end{tabular}
+\caption{Capability ladder on the Wixárika pilot (chrF++ vs gold Spanish).
+$^{*}$The Verify-RAG score is inflated for the wrong reason: its 2B verifier
+accepted every claim (\S4.4), so its gain reflects longer, more assertive
+captions, not verification.}
+\label{tab:ladder}
+\end{table}
+
+The remaining gap to frontier performance is roughly 1--1.5 chrF++.
+
+\section{Analysis}
+
+\paragraph{RQ1: Does cultural grounding help?}
+Cultural prompting alone does not improve end-to-end performance. Retrieval
+substantially increases cultural specificity but produces limited metric
+gains. Human evaluation suggests that cultural prompting yields marginally
+richer cultural descriptions at the cost of slight reductions in
+faithfulness.
+
+\paragraph{RQ2: Resource effects.}
+Resource disparities appear throughout the pipeline. Bribri has the smallest
+retrieval resources and remains difficult across all systems. However,
+retrieval produced some of the largest relative gains in cultural concept
+rates, suggesting that low-resource settings may benefit disproportionately
+when even modest external knowledge becomes available.
+
+\paragraph{RQ3: Which cultural concepts ground reliably?}
+Artifacts and distinctive cultural objects appear most retrievable. Landscape
+concepts proved much harder: several initially promising examples collapsed
+under manual audit because retrieval supplied plausible but unsupported
+regional labels. This finding motivated stricter auditing procedures and
+highlights the danger of equating concept naming with genuine grounding.
+
+\section{Conclusion}
+We presented a retrieval-grounded cultural image captioning pipeline for
+Indigenous languages of the Americas. Cultural prompting alone provided
+minimal gains, but retrieval substantially improved cultural specificity. At
+the same time, our experiments reveal that cultural captioning is ultimately
+constrained not by translation but by retrieval quality, verification
+capability, and evaluation methodology.
+
+Most importantly, we show that standard reference-based metrics fail to
+capture many of the qualities that matter in culturally situated captioning
+systems. Future work should therefore prioritize verified cultural
+grounding, community-informed evaluation, and retrieval methods that provide
+trustworthy contextual knowledge rather than encouraging plausible cultural
+guessing.
+
+\section*{Limitations}
+This work has several limitations.
+
+First, reference-based metrics are largely insensitive to cultural
+correctness. Multiple faithfulness improvements, hallucination fixes, and
+verification gains produced almost no change in chrF++. Conversely,
+degenerate repetition loops still received nontrivial scores.
+
+Second, cultural attribution is inherently underdetermined from image
+evidence alone. Many images require contextual priors that are unavailable
+from pixels.
+
+Third, retrieval quality remains an open problem. Manual inspection revealed
+that many medium-confidence retrievals matched scene categories rather than
+specific cultural artifacts. Concept-rate statistics may therefore reflect a
+mixture of genuine grounding and retrieval-induced label copying.
+
+Fourth, our human evaluation was conducted by researchers who were neither
+community members nor speakers of the target languages. Cultural judgments
+should therefore be interpreted as measurements of specificity rather than
+definitive correctness.
+
+Fifth, gold captions frequently contain nonvisual contextual knowledge.
+Approximately two-thirds of the Wixárika pilot references include information
+such as event purpose, seasonal context, or community-specific background
+that cannot be inferred directly from pixels. This imposes a structural
+ceiling on image-only captioning systems.
+
+Finally, we did not conduct target-language human evaluation due to the
+absence of available native-speaker annotators during the project period.
+
+\section*{Ethics Statement}
+Our goal is to support Indigenous-language technology without replacing
+community expertise. Generated captions are not authoritative cultural
+interpretations and should not be deployed in community-facing contexts
+without review by native and heritage speakers.
+
+We adopt a conservative policy that prohibits naming photographed individuals
+unless their identity is explicitly present in visible image text. This
+decision follows observed cases where retrieval systems incorrectly attached
+real cultural figures to unrelated individuals.
+
+All datasets and retrieval sources were used according to their published
+licenses. Image retrieval collections were harvested only from appropriately
+licensed Wikimedia Commons content, and translation was performed through a
+paid-tier API configuration compatible with CICIL licensing requirements.
+The Maya retrieval bank uses the YUA-ES Communicative Contexts Corpus
+\citep{molina2026yuaes}, cited per its release requirements.
+
+\bibliography{custom}
+\bibliographystyle{acl_natbib}
+
+\end{document}
