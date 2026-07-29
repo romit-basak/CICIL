@@ -28,3 +28,7 @@ predictions/_dryrun/
 
 # OS
 .DS_Store
+
+# local tool installs must never enter the repo (see 2026-07-29 history rewrite)
+google-cloud-sdk/
+*.tar.gz
