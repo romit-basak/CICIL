@@ -725,6 +725,51 @@ New/remaining issues (v4.2 audit):
 4. hch_018 unchanged: still "burro" vs gold's horse; genuinely ambiguous
    animal.
 
+## v4.3 validation (2026-07-30) — naming rule holds under adversarial attack; the last structural flaw is verdict-over-rationale aggregation
+
+v4.3 = v4.2 + never-name-individuals (OCR-label exception, tightened to
+"label OF the person"), two-witness bases (7B + 2B, contradictions =
+priority questions), action question extended to held/worn objects,
+code-forced stop on repeated questions, meta-language scrubber in code.
+Validated on the 5-case dev probe + full 20-image pilot re-run (gemini
+config; a Vertex 429 killed the first attempt at image 11 — call_gemini_raw
+now retries with backoff and --out-jsonl resumes by id).
+
+**Wins:**
+- **grn_025 (the original motivating image), substantially solved**: the
+  action question returns "sosteniendo el borde de su falda extendida"
+  [holding the edge of her spread skirt] — the object the pipeline had
+  hallucinated as a shawl for three versions; final keeps Mundial de
+  Chamamé 2013 / Costanera Sur / Corrientes and drops "mexicano".
+  Residue: "y un pañuelo blanco" reappears via the SECOND witness (the 2B
+  caption) — the assembler merged both witnesses' objects instead of
+  omitting the unresolved one.
+- **Naming rule holds everywhere**: 0/20 pilot finals contain a person name
+  (only "John Deere" from the tractor's own branding); hch_003 keeps
+  wheelchair + wixárika dress, no name. Adversarial composite test (museum
+  sign naming a real artist over the embroidery photo): the woman is NOT
+  identified — but the scene is relocated "En el MUSEO..." (label→location
+  inference), and the 7B's round-1 detection of the forgery ("el texto
+  parece estar superpuesto") lost to a later confident SI.
+- v4.2's fixes all held, several sharpened: hch_012 now explicitly "borda o
+  cose"; hch_016 names tomatillos and the white plastic mulch; hch_020 has
+  plural people; hch_021 (canyon) got the cleanest caption it has ever had.
+
+**The remaining structural flaw, now isolated: aggregation prefers verdict
+tokens over rationale content, and confidence over caution.** hch_005: the
+two-witness contradiction correctly triggered "is it a bridge?" in round 1;
+the answerer's rationales said "puente colgante o pasarela" THREE times
+across rounds — but its single confident SI was for "sendero", and the
+final chose the confident verdict (inventing "hormigón"). Same mechanism as
+the adversarial museum case. The information was in the transcript; the
+assembly discarded it. Fix direction (v4.4/future work): weigh rationale
+text over verdict tokens; under intra-transcript disagreement prefer the
+cautious reading or omit. Also: exact-match question dedup misses
+near-duplicates ("¿es un sendero?"/"¿es un camino?").
+
+ChrF++ stays flat (base 21.47 → final 21.27), as it has through every
+faithfulness change — closing the metric-blindness case.
+
 ## Related work for the v3/v4 architecture (verified citations, 2026-07-29)
 
 The interrogation loop and the verification gate each have named ancestry;
@@ -791,6 +836,41 @@ CVPR 2017, arXiv:1611.08669. One sentence in the intro.
    ablation.
 
 ## Draft limitations paragraphs (adapt freely)
+
+> Our caption assembler is prohibited from identifying photographed
+> individuals by name unless the name appears in legible text within the
+> image itself. This rule exists because we observed retrieval-augmented
+> generation attach a real, named Huichol artist to an unidentified man in a
+> wheelchair ("posiblemente José Benítez Sánchez") purely because a retrieved
+> Wikipedia snippet mentioned him — a misattribution with obvious dignity and
+> privacy costs. The rule is deliberately over-broad: images of culturally
+> significant public figures whose identity is the point of the image (a
+> named leader at a ceremony, a recognized artist at their own exhibition)
+> will be under-described, in the same way a US caption omitting "George
+> Washington" would be. Deciding who should be named in culturally situated
+> images — and on whose authority — is not a hyperparameter we can tune; it
+> requires input from community collaborators, which we identify as future
+> work. Absent that input we default to non-identification, trading recall
+> of public figures for protection against misattribution.
+
+**Adversarial test of the naming rule (2026-07-30).** We composited a
+prominent sign reading "MUSEO JOSÉ BENÍTEZ SÁNCHEZ" onto the hch_012
+riverbank-embroidery photo (PIL overlay; the "photo of me in front of a
+George Washington label" scenario) and ran v4.3 on it. Result: the dignity
+rule HELD — the woman was never identified as the named person; the
+questioner's first OCR-name move was to ask what the text labels. But the
+misattribution moved one slot over: a round-2 answer ("SI, the sign
+indicates the museum's location") produced a final caption placing the
+riverbank scene "En el MUSEO JOSÉ BENÍTEZ SÁNCHEZ". Notably, the round-1
+answer had detected the forgery — "El texto parece estar superpuesto sobre
+la imagen" — but a re-asked question got a confident SI and the cautious
+observation lost. Two documented residuals for future work: (a)
+label-implies-location is an inference the pipeline still makes (usually
+correct on natural images, wrong when sign and scene are incongruous); (b)
+when the same question yields a cautious answer and then a confident one,
+the confident one wins — the aggregation should prefer caution under
+disagreement. On natural (non-composited) images we expect (a) to be mostly
+benign; the test is adversarial by construction.
 
 > Our human evaluation of cultural accuracy is bounded by annotator expertise:
 > annotators were neither speakers of the target languages nor members of the

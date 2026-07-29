@@ -54,6 +54,25 @@ probes never questioned the hallucinated drum at all):
   9. assembler: no meta-language ("no hay evidencia de..." is not a caption)
      and no place names absent from OCR/answers (it invented "Nayarit").
 
+v4.3 (2026-07-30), after auditing the v4.2 pilot run:
+  10. NEVER name individuals (questioner + assembler): retrieval injected a
+      real Huichol artist's name onto an unidentified man ("posiblemente
+      José Benítez Sánchez"). Only exception: a name appearing in the
+      image's own legible text. Paper limitation: culturally significant
+      public figures who SHOULD be named are under-described; who gets
+      named is a community question, not a hyperparameter.
+  11. TWO WITNESSES: the 2B's file caption is passed alongside the 7B base
+      as an independent second description; contradictions (bridge vs
+      "steep path", hch_005) become priority verification targets. Neither
+      witness is trusted; this also gives the fine-tuned SmolVLM a real
+      role again.
+  12. ACTION question extended to held/worn objects (targets the grn_025
+      "pañuelo": she holds her spread SKIRT, never asked).
+  13. Code-enforced stopping: duplicate questions are dropped; an all-repeat
+      batch forces a stop (the 7B questioner never stops voluntarily).
+  14. scrub_meta(): report-style sentences ("no hay evidencia de...")
+      removed from captions in code; the prompt rule alone slipped once.
+
 Multi-pass mode assembles a caption after EVERY round (read-only: the
 questioner never sees these, so the trajectory matches an uninstrumented run).
 This buys three things at one assembler call per round: (a) the round-1
@@ -125,10 +144,11 @@ OCR_QUESTION = (
 )
 
 ACTION_QUESTION = (
-    "¿Qué está haciendo la persona o las personas de la imagen, si las hay? "
-    "Describe brevemente la acción principal (p. ej. bordando una tela, "
-    "dando de comer a animales, cargando sacos a un camión). Si no hay "
-    "personas, responde únicamente: NINGUNA."
+    "¿Qué está haciendo la persona o las personas de la imagen, si las hay, "
+    "y qué sostienen o llevan puesto? Describe brevemente la acción principal "
+    "y los objetos sostenidos (p. ej. bordando una tela, sosteniendo el borde "
+    "de su falda extendida, cargando sacos a un camión). Si no hay personas, "
+    "responde únicamente: NINGUNA."
 )
 
 ITERATIVE_QUESTIONER_PROMPT = """\
@@ -141,6 +161,11 @@ Texto legible que el modelo de visión transcribió de la imagen (hecho observad
 
 Acción principal que el modelo de visión observó (hecho observado):
 {action_block}
+
+Segunda descripción INDEPENDIENTE de la misma imagen, por un modelo de visión distinto (menos fiable en general, pero a veces ve lo que el otro no — un puente que el otro llamó sendero):
+{base2_block}
+
+Si las dos descripciones se CONTRADICEN en algo importante (el tipo de estructura, el objeto principal, la escena), resolver esa contradicción con una pregunta directa es prioridad máxima, junto con verificar las afirmaciones centrales de la base.
 
 Fragmentos de Wikipedia sobre esta cultura, recuperados a partir de esa descripción, con su puntuación de similitud (0-1; por debajo de ~0.40 la relación suele ser casual, no real):
 {snippets}
@@ -160,6 +185,8 @@ PRIMERA PRIORIDAD — verificar la base: la descripción base es una HIPÓTESIS,
 
 Regla de NO REPETICIÓN: nunca vuelvas a formular una pregunta ya respondida, ni una variante trivial de ella. Dos INCIERTO sobre el mismo detalle significan que la imagen no lo resuelve — cambia de tema o termina. Cada ronda debe aportar información nueva.
 
+Regla de NOMBRES PROPIOS: nunca preguntes si una persona de la imagen es un individuo concreto con nombre y apellido (artista, líder, personaje), aunque un fragmento de Wikipedia lo mencione. Los fragmentos describen la cultura en general, no a las personas de esta foto. Si el TEXTO LEGIBLE contiene un nombre de persona, una pregunta prioritaria es a QUÉ etiqueta ese texto: ¿es un gafete o pancarta que identifica a la persona fotografiada, o etiqueta otra cosa (un monumento, un museo, una calle, un evento)?
+
 Responde SOLO con JSON válido, sin markdown. Una de estas dos formas:
 [{{"question": "...", "concept": "...", "vague_part": "..."}}]
 {{"done": true, "reason": "..."}}
@@ -177,6 +204,9 @@ Texto legible transcrito de la imagen (hecho directo — si nombra un lugar o ev
 Acción principal observada (hecho directo — la actividad suele ser lo más importante de la imagen; inclúyela):
 {action_block}
 
+Segunda descripción independiente por otro modelo de visión (si contradice la base y el interrogatorio NO resolvió la contradicción, omite el punto en disputa):
+{base2_block}
+
 Preguntas de verificación visual y las respuestas del modelo de visión mirando la imagen:
 {qa_block}
 
@@ -186,6 +216,7 @@ Reglas estrictas:
 - Nombra un concepto cultural SOLO si su verificación fue SI (usa "posiblemente" si fue INCIERTO). Si fue NO o no hubo verificación, no lo menciones.
 - No añadas ningún dato cultural que no venga de una verificación, ni frases decorativas del tipo "refleja/evoca/representa la cultura {culture_name}" — la pertenencia cultural la da el contexto del dataset, no la descripción.
 - No añadas nombres de lugares, estados o regiones que no aparezcan en el texto legible o en una respuesta del interrogatorio.
+- NUNCA identifiques a una persona de la imagen con un nombre propio (ni con "posiblemente"), salvo que el texto legible de la propia imagen sea claramente una etiqueta DE ESA PERSONA (un gafete, una pancarta con su nombre y su foto) — y eso solo si una verificación lo confirmó. Un texto con nombre propio que etiqueta OTRA cosa (un monumento, un museo, una calle, un cartel de evento) NUNCA identifica a la persona fotografiada: menciónalo como texto visible, no como identidad. Un fragmento de Wikipedia que mencione a un artista o líder NO significa que la persona fotografiada sea esa persona.
 - Escribe una DESCRIPCIÓN, no un informe: nunca uses frases meta como "no hay evidencia de...", "no se observan elementos...", ni menciones el proceso de verificación. Si algo no se verificó, simplemente no lo menciones.
 - Corrige atribuciones culturales erróneas de la base (esta imagen es de la cultura {culture_name}).
 
@@ -227,22 +258,56 @@ def call_gemini_raw(prompt: str, max_tokens: int = 1024) -> str:
     """Full-text Gemini call. translate.call_gemini can't be reused here: it
     returns only the FIRST non-empty line (a guard for line-aligned translation
     output -- it reduced our pretty-printed JSON to '['), applies the
-    translation system prompt, and caps output at 128 tokens."""
+    translation system prompt, and caps output at 128 tokens.
+
+    Retries with backoff: multi-pass fires 10-20 calls per image and a Vertex
+    429 RESOURCE_EXHAUSTED killed the first v4.3 pilot run mid-image."""
+    import time
+
     from google.genai import types
 
     from src.stage2.translate import GEMINI_MODEL, GEMINI_SEED, _get_client
 
-    response = _get_client().models.generate_content(
-        model=GEMINI_MODEL,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            temperature=0.2,  # near-deterministic; this is extraction, not translation
-            seed=GEMINI_SEED,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
-            max_output_tokens=max_tokens,
-        ),
-    )
-    return (response.text or "").strip()
+    for attempt, delay in enumerate((0, 15, 45, 120)):
+        if delay:
+            print(f"    (Gemini retry {attempt}, sleeping {delay}s)")
+            time.sleep(delay)
+        try:
+            response = _get_client().models.generate_content(
+                model=GEMINI_MODEL,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.2,  # near-deterministic; extraction, not translation
+                    seed=GEMINI_SEED,
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),
+                    max_output_tokens=max_tokens,
+                ),
+            )
+            return (response.text or "").strip()
+        except Exception as e:  # noqa: BLE001 -- one 429 must not kill a 2h run
+            if attempt == 3:
+                raise
+            print(f"    WARNING: Gemini error ({str(e)[:80]}), retrying")
+    return ""
+
+
+META_LANGUAGE_RE = re.compile(
+    r"no hay evidencia|no se observa|no se pueden? (?:identificar|determinar|ver)|"
+    r"no es posible determinar|sin evidencia de", re.I)
+
+
+def scrub_meta(caption: str) -> str:
+    """Drop report-style sentences from a caption (the no-meta prompt rule
+    slipped once in the v4.2 local run; enforce it in code)."""
+    sentences = re.split(r"(?<=[.!?])\s+", caption)
+    kept = [s for s in sentences if not META_LANGUAGE_RE.search(s)]
+    return " ".join(kept).strip() or caption
+
+
+def norm_question(q: str) -> str:
+    """Normalized form for duplicate detection (v4.1-local asked the same
+    sandal question 5x verbatim; the prompt rule alone didn't stop it)."""
+    return re.sub(r"[^a-záéíóúñü ]", "", q.lower()).strip()
 
 
 def parse_questions(raw: str) -> list[dict]:
@@ -314,6 +379,12 @@ def main() -> None:
     parser.add_argument("--out-jsonl", type=Path, default=None,
                         help="append one record per image (base, ocr, per-round "
                              "qa + captions, final) for scoring/auditing")
+    parser.add_argument("--image", type=Path, default=None,
+                        help="run on one arbitrary image file (adversarial "
+                             "tests); pairs with --culture for the bank")
+    parser.add_argument("--culture", default="wixarika",
+                        choices=list(CULTURE_NAMES_ES),
+                        help="culture bank to use with --image")
     args = parser.parse_args()
 
     from src.stage1.rag_context import TextBank
@@ -335,18 +406,35 @@ def main() -> None:
     text_banks: dict[str, TextBank] = {}
 
     split = "pilot" if args.pilot else "dev"
-    cases = ([("wixarika", e.id) for e in load_split("wixarika", "pilot")]
-             if args.pilot else CASES)
+    if args.image:
+        cases = [(args.culture, args.image.stem)]
+    elif args.pilot:
+        cases = [("wixarika", e.id) for e in load_split("wixarika", "pilot")]
+    else:
+        cases = CASES
+
+    # Resume: skip ids already recorded (the first v4.3 pilot run died at
+    # image 11 on a Vertex 429; rerunning must not duplicate the first 10).
+    if args.out_jsonl and args.out_jsonl.exists():
+        done = {json.loads(l)["id"] for l in args.out_jsonl.open(encoding="utf-8")
+                if l.strip()}
+        if done:
+            print(f"[resume] skipping {len(done)} already in {args.out_jsonl.name}")
+            cases = [(c, i) for c, i in cases if i not in done]
 
     for culture, image_id in cases:
-        ex = next(e for e in load_split(culture, split) if e.id == image_id)
+        if args.image:
+            image_path = args.image
+        else:
+            ex = next(e for e in load_split(culture, split) if e.id == image_id)
+            image_path = ex.image_path
         if culture not in text_banks:
             text_banks[culture] = TextBank(culture)
 
         print(f"\n{'=' * 70}\n{image_id} ({culture})\n{'=' * 70}")
         if args.base == "answerer" and backend is not None:
             from src.stage1 import vqa_prompts
-            base = backend.caption(ex.image_path, vqa_prompts.GENERIC_PROMPT)
+            base = backend.caption(image_path, vqa_prompts.GENERIC_PROMPT)
             base_source = "answerer"
         else:
             base_path = OUTPUTS / f"{culture}_{split}_generic_smolvlm.jsonl"
@@ -355,6 +443,21 @@ def main() -> None:
                         if json.loads(l)["id"] == image_id)
             base_source = "smolvlm-file"
         print(f"STEP 0 -- base caption ({base_source}):\n  {base}")
+
+        # Second witness: the 2B's independent description of the same image
+        # (on disk for dev + wixarika pilot). Neither witness is trusted --
+        # disagreements become priority verification targets (the hch_005
+        # bridge that the 7B parsed as a "steep path" but the 2B got right).
+        base2_block = "(no disponible)"
+        if base_source == "answerer":
+            try:
+                base2_path = OUTPUTS / f"{culture}_{split}_generic_smolvlm.jsonl"
+                base2_block = next(json.loads(l)["generated_spanish"]
+                                   for l in base2_path.open(encoding="utf-8")
+                                   if json.loads(l)["id"] == image_id)
+                print(f"STEP 0.5 -- second witness (smolvlm):\n  {base2_block}")
+            except (FileNotFoundError, StopIteration):
+                pass
 
         hits = text_banks[culture].retrieve(base, k=5)
         print("STEP 1 -- retrieval on base caption:")
@@ -372,7 +475,7 @@ def main() -> None:
 
         def ask_vlm(q: dict) -> str:
             return backend.caption(
-                ex.image_path,
+                image_path,
                 q["question"] + " Responde únicamente con una palabra: SI, NO, o "
                                 "INCIERTO, seguida de una breve razón.")
 
@@ -384,11 +487,11 @@ def main() -> None:
         ocr_block = "(no extraído)"
         action_block = "(no extraído)"
         if backend is not None:
-            ocr = backend.caption(ex.image_path, OCR_QUESTION)
+            ocr = backend.caption(image_path, OCR_QUESTION)
             ocr_block = ("(ninguno)" if re.search(r"^\s*ninguno", ocr, re.I)
                          or len(ocr.strip()) < 3 else ocr.strip()[:300])
             print(f"STEP 1.5 -- legible text (answerer): {ocr_block}")
-            action = backend.caption(ex.image_path, ACTION_QUESTION)
+            action = backend.caption(image_path, ACTION_QUESTION)
             action_block = ("(ninguna persona)" if re.search(r"^\s*ninguna", action, re.I)
                             or len(action.strip()) < 3 else action.strip()[:300])
             print(f"STEP 1.6 -- main action (answerer): {action_block}")
@@ -401,18 +504,30 @@ def main() -> None:
             # round; the questioner sees all answers before deciding the next
             # batch or stopping.
             transcript: list[str] = []
+            asked: set[str] = set()
             for round_i in range(1, args.max_rounds + 1):
                 decision = parse_decision(llm_call(ITERATIVE_QUESTIONER_PROMPT.format(
                     culture_name=CULTURE_NAMES_ES[culture], base_caption=base,
                     snippets=snippets, ocr_block=ocr_block, action_block=action_block,
+                    base2_block=base2_block,
                     qa_block="\n".join(transcript) or "(aún ninguna pregunta)")))
                 if decision.get("done"):
                     stop_reason = decision.get("reason", "?")
                     print(f"STEP 2.{round_i} -- questioner ({args.llm}) stops: "
                           f"{stop_reason}")
                     break
+                # Code-enforced no-repetition: drop already-asked questions;
+                # if the whole batch is repeats, the questioner is out of
+                # ideas -- force the stop it won't take itself.
+                fresh = [q for q in decision["questions"]
+                         if norm_question(q["question"]) not in asked]
+                if not fresh:
+                    stop_reason = "(forced: batch repeated earlier questions)"
+                    print(f"STEP 2.{round_i} -- {stop_reason}")
+                    break
+                asked.update(norm_question(q["question"]) for q in fresh)
                 round_qa: list[dict] = []
-                for q in decision["questions"]:
+                for q in fresh:
                     answer = ask_vlm(q)
                     round_qa.append({"concept": q.get("concept", "?"),
                                      "question": q["question"], "answer": answer})
@@ -427,10 +542,10 @@ def main() -> None:
                 # transcript), so the trajectory matches an uninstrumented run
                 # and the round-1 caption doubles as the single-pass result --
                 # one run yields the whole quality-vs-rounds curve.
-                round_caption = llm_call(ASSEMBLER_PROMPT.format(
+                round_caption = scrub_meta(llm_call(ASSEMBLER_PROMPT.format(
                     culture_name=CULTURE_NAMES_ES[culture], base_caption=base,
                     ocr_block=ocr_block, action_block=action_block,
-                    qa_block="\n".join(qa_lines)))
+                    base2_block=base2_block, qa_block="\n".join(qa_lines))))
                 rounds_log.append({"round": round_i, "qa": round_qa,
                                    "caption": round_caption})
                 print(f"  CAPTION after round {round_i}: {round_caption}")
@@ -453,10 +568,10 @@ def main() -> None:
                                 f"  Pregunta: {q['question']}\n  Respuesta: {answer}")
                 print(f"STEP 3 -- VLM answer [{q.get('concept', '?')}]: {answer}")
 
-        final = llm_call(ASSEMBLER_PROMPT.format(
+        final = scrub_meta(llm_call(ASSEMBLER_PROMPT.format(
             culture_name=CULTURE_NAMES_ES[culture], base_caption=base,
-            ocr_block=ocr_block, action_block=action_block,
-            qa_block="\n".join(qa_lines) or "(ninguna verificación -- usa solo la base)"))
+            ocr_block=ocr_block, action_block=action_block, base2_block=base2_block,
+            qa_block="\n".join(qa_lines) or "(ninguna verificación -- usa solo la base)")))
         print(f"STEP 4 -- assembled final caption ({args.llm}):\n  {final}")
 
         if args.out_jsonl:
@@ -464,8 +579,9 @@ def main() -> None:
                 f.write(json.dumps({
                     "id": image_id, "culture": culture, "split": split,
                     "llm": args.llm, "answerer": args.answerer,
-                    "version": "v4.2", "base_source": base_source,
-                    "base": base, "ocr": ocr_block, "action": action_block,
+                    "version": "v4.3", "base_source": base_source,
+                    "base": base, "base2": base2_block,
+                    "ocr": ocr_block, "action": action_block,
                     "rounds": rounds_log, "stop_reason": stop_reason,
                     "final": final,
                 }, ensure_ascii=False) + "\n")
