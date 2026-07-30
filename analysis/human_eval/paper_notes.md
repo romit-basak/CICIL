@@ -1390,3 +1390,28 @@ Answer: not an utter failure and not absent content — cultural content is
 visually recoverable on ~25-30% of items, the bank is the bottleneck there
 (2 captured where covered vs 0 baseline), and the rest is context- or
 recognition-class where honest silence IS the right output.
+
+## v4.6 FULL validation (20-image fully-local pilot, 2026-07-30 morning) — POSTER
+
+Exit 0/0. All structural checks pass at scale:
+- witness-citation scrub: **0/40 questions** carry "como se describe..." (code-enforced)
+- fabricated concepts: NONE; flourishes: NONE
+- **hch_013 fixed at scale**: "cerca de un carretón vacío, mientras parece
+  cuidar animales en un corral" — cart correct, no wooden-board/firewood, and
+  the action now matches the gold ("dándole de comer a sus becerritos")
+- hch_012 sewing-by-river intact
+
+ChrF++: v4.6 in-loop final **22.02** (best local number yet; gemini-direct
+ceiling 22.71); + v4.5-whitelist reassembly **21.48** (v4.3.1 equivalent:
+21.05). Caveat: base captions are stochastic across runs (this run's base
+21.92 vs 21.51 last run), so cross-run ChrF++ deltas are partly base luck —
+claim "unharmed, possibly helped," not "+0.4 from v4.6."
+
+Remaining error class is now PURE PERCEPTION: hch_005 still reads the
+suspension footbridge as a "sendero... protegido por una valla metálica"
+(the 7B self-confirmation residual v4.6 was never aimed at) — the
+independent-witness future-work line stands as the last open door.
+
+Poster arc final form: two annotation-round finds → transcript mechanism →
+three-line structural fix → 2/2 diagnostic → full-run validation (0/40
+citations, 0 fabrications, hch_013 fixed, ChrF++ unharmed).
