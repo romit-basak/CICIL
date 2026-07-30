@@ -1183,3 +1183,34 @@ the deadline): witness-conflict questions must be phrased as neutral
 disjunctions in CODE ("¿sostiene un pañuelo o el borde de su falda?"), and
 the ACTION channel should be un-outvotable on what the subject is
 doing/holding. Figure 1(b) panel text updated with the mechanism.
+
+## v4.6 fix VERIFIED on both diagnostic cases (2026-07-29) — POSTER MATERIAL, not in the paper
+
+Post-submission experiment (flag-gated `--v46`; default pipeline and round 4
+untouched). Fix = the three-part remedy for the ACTION-outvoted mechanism:
+(1) witness-citation scrub in CODE (regex strips "como se describe en la
+primera/segunda descripción" from questions); (2) neutral-disjunction rule
+for witness conflicts; (3) ACTION channel made un-outvotable on what the
+subject is doing/holding.
+
+Results (gemini questioner + local 7B answerer, max-rounds 10):
+- **grn_025**: questioner asked "¿La mujer está sosteniendo un pañuelo
+  largo, o el borde de su vestido?" → answerer INCIERTO → final: "posa
+  sosteniendo el borde de su falda" — **phantom shawl eliminated** (the
+  v4.3.1→v4.5 finals all carried it).
+- **hch_013**: "¿El objeto que sostiene la persona es un manillar de un
+  carretón, o un pequeño cuerpo de leña?" → "el manillar de un carretón" →
+  final: "sostiene el manillar de un carretón vacío" — **wheelbarrow
+  correct** (v4.3.1 final had said "cartón de madera" + "cuerpo de leña",
+  the 2B witness's cartón hallucination).
+
+Honest residuals (orthogonal channels, unchanged by this fix): poster year
+still misread (2019 this run vs the poster's 2012; 2013 in the v4.3.1 run —
+stochastic OCR fragility), and hch_013's calves called "cabras y cerdos"
+(species-level 7B misperception). 2/2 on the targeted mechanism; the
+targeted mechanism only.
+
+Poster line: "Diagnosed after submission from two annotation-round
+transcripts; three-line structural fix; verified on both diagnostic cases."
+Note for any future full rerun: v4.6 outputs must NOT replace round-4/paper
+numbers — different config, unaudited at scale.

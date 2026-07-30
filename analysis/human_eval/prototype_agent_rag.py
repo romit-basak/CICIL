@@ -328,6 +328,28 @@ def scrub_meta(caption: str) -> str:
     return out or caption
 
 
+# --- v4.6 experiment (post-deadline; poster acknowledgment only) ------------
+# grn_025/hch_013 diagnosis: the ACTION channel answered correctly in both
+# ("holding the edge of her dress"; "garden cart"), but witness-derived
+# presupposition questions ("...como se describe en la segunda descripción?")
+# echo-confirmed the 2B witness's hallucination (pañuelo; cartón), and several
+# confident SIs outvoted the one direct observation at assembly. Fix, per the
+# project's standing lesson (enforce in code, not prose): scrub witness
+# citations from questions in CODE, instruct neutral disjunctions, and make
+# the ACTION channel un-outvotable on what the subject is doing/holding.
+WITNESS_CITATION_RE = re.compile(
+    r",?\s*(?:tal\s+)?como\s+(?:se\s+)?(?:describe|menciona|indica|aparece)\s+en\s+"
+    r"(?:la\s+)?(?:primera|segunda)\s+descripci[oó]n", re.I)
+
+V46_QUESTIONER_RULE = """
+REGLA ADICIONAL (conflictos entre testigos): si las dos descripciones difieren sobre un objeto o una acción, formula UNA pregunta de DISYUNCIÓN NEUTRAL entre las dos lecturas (p. ej. "¿La mujer sostiene un pañuelo, o el borde de su falda?"), sin citar ninguna descripción. NUNCA escribas "como se describe en la primera/segunda descripción" ni reveles cuál lectura viene de qué testigo.
+"""
+
+V46_ASSEMBLER_RULE = """
+Regla adicional (prioridad de la acción observada): la acción principal observada es un hecho directo INAPELABLE sobre lo que la persona hace o sostiene. Si respuestas del interrogatorio la contradicen en ese punto, prevalece la acción observada, por muchas y seguras que sean las respuestas.
+"""
+
+
 def norm_question(q: str) -> str:
     """Normalized form for duplicate detection (v4.1-local asked the same
     sandal question 5x verbatim; the prompt rule alone didn't stop it)."""
@@ -414,6 +436,17 @@ def main() -> None:
     parser.add_argument("--culture", default="wixarika",
                         choices=list(CULTURE_NAMES_ES),
                         help="culture bank to use with --image")
+    parser.add_argument("--case", default=None, metavar="CULTURE:ID",
+                        help="run a single dataset case (e.g. wixarika:hch_013); "
+                             "combine with --split for pilot images")
+    parser.add_argument("--split", default=None, choices=["dev", "pilot"],
+                        help="override the dev/pilot split resolution "
+                             "(needed by --case on pilot images)")
+    parser.add_argument("--v46", action="store_true",
+                        help="EXPERIMENT: neutral-disjunction witness questions "
+                             "(citation scrub in code) + un-outvotable ACTION "
+                             "channel; validates the grn_025-shawl / hch_013-"
+                             "wheelbarrow fix for the poster")
     args = parser.parse_args()
 
     from src.stage1.rag_context import TextBank
@@ -434,9 +467,12 @@ def main() -> None:
     from src.stage1.data_io import load_split
     text_banks: dict[str, TextBank] = {}
 
-    split = "pilot" if args.pilot else "dev"
+    split = args.split or ("pilot" if args.pilot else "dev")
     if args.image:
         cases = [(args.culture, args.image.stem)]
+    elif args.case:
+        culture, iid = args.case.split(":")
+        cases = [(culture, iid)]
     elif args.pilot:
         cases = [("wixarika", e.id) for e in load_split("wixarika", "pilot")]
     elif args.dev_sample:
@@ -542,8 +578,10 @@ def main() -> None:
             # batch or stopping.
             transcript: list[str] = []
             asked: set[str] = set()
+            q_prompt = ITERATIVE_QUESTIONER_PROMPT + (
+                V46_QUESTIONER_RULE if args.v46 else "")
             for round_i in range(1, args.max_rounds + 1):
-                decision = parse_decision(llm_call(ITERATIVE_QUESTIONER_PROMPT.format(
+                decision = parse_decision(llm_call(q_prompt.format(
                     culture_name=CULTURE_NAMES_ES[culture], base_caption=base,
                     snippets=snippets, ocr_block=ocr_block, action_block=action_block,
                     base2_block=base2_block,
@@ -556,6 +594,11 @@ def main() -> None:
                 # Code-enforced no-repetition: drop already-asked questions;
                 # if the whole batch is repeats, the questioner is out of
                 # ideas -- force the stop it won't take itself.
+                if args.v46:
+                    # Enforce the no-citation rule in code, not just prose.
+                    for q in decision["questions"]:
+                        q["question"] = WITNESS_CITATION_RE.sub(
+                            "", q["question"]).strip()
                 fresh = [q for q in decision["questions"]
                          if norm_question(q["question"]) not in asked]
                 if not fresh:
@@ -579,7 +622,9 @@ def main() -> None:
                 # transcript), so the trajectory matches an uninstrumented run
                 # and the round-1 caption doubles as the single-pass result --
                 # one run yields the whole quality-vs-rounds curve.
-                round_caption = scrub_meta(llm_call(ASSEMBLER_PROMPT.format(
+                a_prompt = ASSEMBLER_PROMPT + (
+                    V46_ASSEMBLER_RULE if args.v46 else "")
+                round_caption = scrub_meta(llm_call(a_prompt.format(
                     culture_name=CULTURE_NAMES_ES[culture], base_caption=base,
                     ocr_block=ocr_block, action_block=action_block,
                     base2_block=base2_block, qa_block="\n".join(qa_lines))))
@@ -605,7 +650,8 @@ def main() -> None:
                                 f"  Pregunta: {q['question']}\n  Respuesta: {answer}")
                 print(f"STEP 3 -- VLM answer [{q.get('concept', '?')}]: {answer}")
 
-        final = scrub_meta(llm_call(ASSEMBLER_PROMPT.format(
+        final = scrub_meta(llm_call((ASSEMBLER_PROMPT + (
+            V46_ASSEMBLER_RULE if args.v46 else "")).format(
             culture_name=CULTURE_NAMES_ES[culture], base_caption=base,
             ocr_block=ocr_block, action_block=action_block, base2_block=base2_block,
             qa_block="\n".join(qa_lines) or "(ninguna verificación -- usa solo la base)")))
@@ -616,7 +662,8 @@ def main() -> None:
                 f.write(json.dumps({
                     "id": image_id, "culture": culture, "split": split,
                     "llm": args.llm, "answerer": args.answerer,
-                    "version": "v4.3", "base_source": base_source,
+                    "version": "v4.6" if args.v46 else "v4.3",
+                    "base_source": base_source,
                     "base": base, "base2": base2_block,
                     "ocr": ocr_block, "action": action_block,
                     "rounds": rounds_log, "stop_reason": stop_reason,
