@@ -240,6 +240,39 @@ function start() {{
 function setField(sid, field, value) {{
   const cur = load(sid); cur[field] = value; save(sid, cur);
   document.getElementById("status").innerHTML = statusLine();
+  for (const id of ["itemstate", "itemstate2"]) {{
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = itemState(sid);
+  }}
+}}
+
+function missingFields(sid) {{
+  const it = ITEMS.find(i => i.sample_id === sid);
+  const r = load(sid);
+  const miss = [];
+  for (const d of DIMS)
+    for (const slot of ["A", "B"])
+      if (r[slot + "_" + d[0]] === undefined) miss.push(slot + " " + d[1].toLowerCase());
+  if (r["preference_A_B_tie"] === undefined) miss.push("preference");
+  if (it.cbir_title && r[CBIR_DIM[0]] === undefined) miss.push("retrieval rating");
+  return miss;
+}}
+
+function itemState(sid) {{
+  const miss = missingFields(sid);
+  return miss.length
+    ? `<span class="todo">&#10007; this item is missing: ${{miss.join(" &middot; ")}}</span>`
+    : `<span class="done">&#10003; this item is fully scored</span>`;
+}}
+
+function nextUnfinished() {{
+  for (let k = 1; k <= ITEMS.length; k++) {{
+    const j = (idx + k) % ITEMS.length;
+    if (!isComplete(ITEMS[j].sample_id)) {{
+      idx = j; render(); window.scrollTo(0, 0); return;
+    }}
+  }}
+  alert("All items are fully scored — ready to export.");
 }}
 
 function isComplete(sid) {{
@@ -317,10 +350,14 @@ function render() {{
   const navBar = (statusSpan) => `
       <button onclick="go(-1)" ${{idx === 0 ? "disabled" : ""}}>&larr; Prev</button>
       <span class="progress">Item ${{idx + 1}}/${{ITEMS.length}} &nbsp;·&nbsp; ${{sid}} (${{it.language}}) &nbsp;·&nbsp; ${{statusSpan}}</span>
-      <button onclick="go(1)" ${{idx === ITEMS.length - 1 ? "disabled" : ""}}>Next &rarr;</button>`;
+      <span>
+        <button onclick="nextUnfinished()" title="Jump to the next item with missing fields">Next unfinished &#8677;</button>
+        <button onclick="go(1)" ${{idx === ITEMS.length - 1 ? "disabled" : ""}}>Next &rarr;</button>
+      </span>`;
   document.getElementById("app").innerHTML = `
-    <div class="card nav nav-top">
-      ${{navBar(`<span id="status">${{statusLine()}}</span>`)}}
+    <div class="card nav-top">
+      <div class="nav">${{navBar(`<span id="status">${{statusLine()}}</span>`)}}</div>
+      <div id="itemstate" style="margin-top:7px; font-size:.88rem">${{itemState(sid)}}</div>
     </div>
     <div class="card">
       <img class="eval" src="${{it.image_src}}"
@@ -335,8 +372,9 @@ function render() {{
       <div class="arm"><h2>Notes (cultural errors, hallucinations, category hits/misses)</h2>
         <textarea onchange="setField('${{sid}}','notes',this.value)">${{esc(saved["notes"] || "")}}</textarea></div>
     </div>
-    <div class="card nav">
-      ${{navBar(`<span>${{statusLine()}}</span>`)}}
+    <div class="card">
+      <div class="nav">${{navBar(`<span>${{statusLine()}}</span>`)}}</div>
+      <div id="itemstate2" style="margin-top:7px; font-size:.88rem">${{itemState(sid)}}</div>
     </div>
     <div class="card nav">
       <span>Autosaves locally as you go (per annotator name).</span>
