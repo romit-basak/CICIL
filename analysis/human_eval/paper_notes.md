@@ -1260,3 +1260,31 @@ Carretón-class ledger so far: hch_009 carretón, grn_002 Residentas — both
 visible, publicly documented, absent from Wikipedia-hub banks. Future-work
 line writes itself: bank sources beyond Wikipedia hubs (ethnographic
 literature, national heritage registries).
+
+## grn_018 / ñandutí head-to-head (2026-07-29) — the round's money shot
+
+S028 = grn_018: multicolored radial embroidery, ñandutí (annotator-identified,
+agent-confirmed). The two arms on the SAME image:
+
+- **Baseline (smolvlm-rag)**: "un arte huichol, conocido como 'Milho',
+  realizado con hilos de colores... en Bolivia, representando... la cultura
+  Mbyá Guarani." Four knowledge sources misfiring in one sentence:
+  (1) "Huichol" = PARAMETRIC prior (nowhere in prompt or context — the given
+  culture was guaraní; the prior for colored-thread-art→Huichol OVERRODE the
+  prompt); (2) "Milho" = cross-lingual label copy (CBIR neighbor titled
+  "Milho tradicional Mbyá Guarani" — milho is Portuguese for MAIZE; a corn
+  photo's caption word copied as the art form's name); (3) "en Bolivia" =
+  location copy from a different neighbor (Tejido Izozog, Santa Cruz);
+  (4) "Mbyá" = subgroup copy from the corn photo. All three CBIR neighbors
+  were low-band junk. Score 0/0.
+- **Agent (v4.5-local)**: whitelist [Ñandutí, Pericón, Bandera de Paraguay];
+  final: "La imagen muestra un ñandutí, un diseño de bordado artesanal con
+  patrones geométricos y círculos concéntricos..." — correct, informative,
+  faithful. **First cultural 2 of round 4.** Score 2/2.
+
+Notable: strongest evidence yet that the 2B's parametric prior overrides
+even an explicit culture-as-given prompt; and the clearest demonstration
+that the whitelist enables (not just restricts) cultural naming when the
+bank has the concept. Poster: this pair alone tells the whole story.
+(Blinding note: S028 unblinded for Romit by this analysis — scored on
+merits; slot shuffle intact elsewhere.)
