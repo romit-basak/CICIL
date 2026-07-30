@@ -467,6 +467,8 @@ Local 7B base      & 21.47--21.75 \\
 Agent v4.2         & 21.73 \\
 Agent v4.3.1 (local) & 21.68 \\
 Agent final (strict agg., local) & 21.05 \\
+Agent v4.6 (local, post-eval fix)$^{\ddagger}$ & 22.02 \\
+Agent v4.6 (strict agg.)$^{\ddagger}$ & 21.48 \\
 Gemini direct      & 22.71 \\
 \bottomrule
 \end{tabular}
@@ -477,7 +479,10 @@ captions, not verification. ``Agent final'' applies the strictest
 aggregation policy (retrieval-whitelisted naming, decorative-flourish
 removal); its drop below v4.3.1 is largely a metric artifact---removing
 decorative mentions of the culture also removes tokens shared with
-references that name it.}
+references that name it. $^{\ddagger}$v4.6 fixes an aggregation mechanism
+diagnosed during human evaluation (\S6); the human-eval numbers use v4.5
+outputs. Base captions are resampled per run, so cross-run differences
+partly reflect base variation.}
 \label{tab:ladder}
 \end{table}
 
@@ -589,6 +594,25 @@ baseline turns a suspension footbridge into ``a central cobblestone arch, a
 Wixárika cultural and artisanal element'' in Wirikuta; the interrogation
 arm simply describes the bridge, the river, and the terrain. Across all
 three, chrF++ moves by fractions of a point.
+
+\paragraph{From annotation to fix (v4.6).}
+The shawl mechanism above was diagnosed \emph{during} human evaluation,
+from the transcripts of two annotated items --- it is one mechanism with
+two instances (the second renders a metal wheelbarrow as ``a wooden board''
+and ``firewood'' although the action channel had said ``garden cart''). We
+fixed it structurally rather than with prompt instructions: witness
+citations are stripped from generated questions in code; witness conflicts
+must be posed as neutral disjunctions (``a shawl, or the edge of her
+skirt?''); and the observed-action channel is made un-outvotable on what
+the subject is doing or holding. On both diagnostic items the phantom
+object disappears and the correct reading survives, and on a full rerun of
+the pilot the citation rate is 0 of 40 generated questions, no cultural
+concepts or decorative flourishes are fabricated, and chrF++ is unchanged
+(21.5--22.0; Table~\ref{tab:ladder}). All human-evaluation numbers in this
+paper were collected on the earlier v4.5 outputs the annotators saw; we
+report the fix separately rather than re-annotating, both to preserve
+blinding and because the diagnosis is itself a product of the audit-based
+evaluation this paper advocates.
 
 \paragraph{Gold captions describe more than the image.}
 Reading the 20 Wixárika pilot references against their images, roughly
