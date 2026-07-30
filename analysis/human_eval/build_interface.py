@@ -110,13 +110,20 @@ def load_items(suffix: str = "", split: str = "dev") -> list[dict]:
 
 DIMENSIONS = [
     ("cultural_accuracy", "Cultural accuracy",
-     ["0 — wrong/absent: culturally generic, or names the wrong culture",
-      "1 — partial: right gist but vague, or mixes correct + incorrect detail",
-      "2 — accurate: correct culturally specific content, right terms"]),
+     ["0 — the informative cultural claims are fabricated or wrong "
+      "(invented sites/regions/artifact identities); merely echoing the "
+      "given culture name doesn't rescue it",
+      "1 — no false cultural claims but no informative ones either (honest "
+      "silence, bare hedged attribution), or genuinely correct specifics "
+      "mixed with wrong ones",
+      "2 — makes at least one correct, informative cultural claim beyond "
+      "the given culture name"]),
     ("faithfulness", "Image faithfulness",
-     ["0 — contradicts the image / hallucinates major content",
+     ["0 — contradicts the image / hallucinates major content (incl. "
+      "confident claims about things not visible, e.g. invented locations)",
       "1 — mostly right, one notable wrong or missing element",
-      "2 — faithful to the salient content"]),
+      "2 — faithful to the salient content; a grounded hedge about a "
+      "visible object's identity is not a fault"]),
     ("fluency", "Fluency (content coherence — see rubric's pivot caveat)",
      ["0 — broken: repetition loops, truncation, incoherent",
       "1 — understandable but awkward or confused",

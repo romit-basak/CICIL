@@ -67,13 +67,18 @@ image (objects, dress, practices, setting), without inventing or mislabelling it
 
 | Score | Meaning | Example signal |
 |---|---|---|
-| **0 — wrong / absent** | Culturally generic *or* names the wrong culture. Misidentifies a culturally specific object, or omits obvious cultural content and describes only generic shapes/colors. | "two wooden cups on a striped cloth" for a *mate* set; or attributing an item to the wrong tradition. |
-| **1 — partial** | Gets the general cultural gist but is vague, incomplete, or mixes one correct and one incorrect cultural detail. | "a traditional drink container" (right idea, not named); names *mate* but invents the material. |
-| **2 — accurate** | Correctly identifies the culturally specific content, with the right terms and no cultural errors. | "a *mate* gourd and *bombilla* for drinking yerba mate." |
+| **0 — fabricated / wrong** | The caption's *informative* cultural claims are fabricated or wrong: invented sites/regions, wrong tradition, invented artifact identities. Echoing the given culture name does **not** rescue it. | "In the Wirikuta region, in San Luis Potosí... a Wixárika cultural and artisanal element" for an ordinary arch — every informative claim is ungroundable. |
+| **1 — no information / mixed** | No false cultural claims but no informative ones either (honest silence; bare hedged attribution of the given culture), **or** genuinely correct specifics mixed with wrong ones. | A faithful generic scene description; "a traditional drink container" (right idea, not named); names *mate* but invents the material. |
+| **2 — informative and correct** | Makes at least one correct, informative cultural claim **beyond the given culture name**, with the right terms and no cultural errors. | "a *mate* gourd and *bombilla* for drinking yerba mate." |
 
 > **Wrong-culture rule:** confidently attributing content to the wrong culture is a
 > **0**, even if fluent — a confident cultural error is worse than a vague-but-safe
 > caption.
+
+> **Culture-name echo rule (round 4+):** both arms were *told* the target culture,
+> so naming it carries no information. Judge only the claims that go beyond it.
+> Honest silence and a bare hedged attribution both score **1** on this dimension;
+> the preference judgment is where "silence beats unfounded hedging" gets expressed.
 
 ### 2. Image faithfulness / adequacy (0–2)
 
@@ -81,9 +86,9 @@ Independent of culture: does the caption describe **what is actually in the imag
 
 | Score | Meaning |
 |---|---|
-| **0** | Contradicts the image or hallucinates major content not present. |
+| **0** | Contradicts the image or hallucinates major content not present — including confident claims about things that cannot be seen (invented locations, events, purposes). |
 | **1** | Mostly right but with a notable wrong or missing element. |
-| **2** | Faithful to the salient content of the image. |
+| **2** | Faithful to the salient content of the image. A *grounded hedge* about a visible object's identity ("possibly a traditional blanket" for a clearly visible woven object) is not a fault — the uncertainty is about identity, not existence. |
 
 ### 3. Fluency (0–2)
 
