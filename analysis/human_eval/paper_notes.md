@@ -1133,3 +1133,33 @@ failure-modes paragraph and the presentation's "so what" slide.
 - Round 4 rebuilt: 40 images, 5 cultures, arm B = v4.5-local finals; English
   pivot + interface regenerated; all image paths verified on disk; gold shown
   only for the 20 wixárika-pilot rows, labeled "context, not the answer key".
+
+## The carretón case (2026-07-29) — a THIRD gold-gap class: visible, nameable, publicly attested, but not in Wikipedia
+
+hch_009 gold: "La llamada carretón hecha especialmente para guardar alimento
+como el maíz, y es utilizado para alojamiento de personas." (EN: *The
+so-called carretón, made especially for storing food like corn, and used for
+human lodging.*) The image shows a stilt structure with thatched roof;
+annotator (Romit) suspected the gold was wrong ("carretón" = cart). VERIFIED
+correct via ethnographic literature: the carretón/kareta is Wixárika domestic
+architecture — wooden construction, thatched roof, raised reed-platform floor
+(~1–1.5 m), stores grain/utensils AND serves as sleeping quarters (cooler at
+night). Source: kinship study of a Wixárika locality in southern Durango
+(thefreelibrary.com/Parentesco+y+relaciones+de+genero...), also consistent
+with Wixárika maize-culture literature (SciELO).
+
+Gap-class taxonomy this completes:
+1. **jaripeo class** — knowledge invisible in the image (event/purpose
+   context). Unbridgeable from pixels by any system.
+2. **carretón class** — concept VISIBLE and identifiable from the image; term
+   publicly attested in ethnographic sources; absent from our Wikipedia-hub
+   banks. A bank COVERAGE ceiling, not a ranking failure — bridgeable with
+   ethnographic/anthropological bank sources. Sharpens RQ3: artifacts ground
+   reliably IF banked. Future-work line: extend harvest beyond Wikipedia.
+3. (community vernacular with no public attestation would be a fourth class;
+   carretón turned out NOT to be this — it is documented, just not on
+   Wikipedia.)
+
+Agent caption for hch_009 (post-scrub): faithful stilt-shelter description,
+cultural accuracy 1 / faithfulness 2 under the round-4 rubric — the honest
+ceiling given the bank.
