@@ -145,30 +145,59 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <meta charset="utf-8">
 <title>CICIL Human Evaluation — Stage 1 (English-assisted)</title>
 <style>
-  body {{ font-family: -apple-system, Segoe UI, sans-serif; margin: 0; background: #f5f5f4; color: #1c1917; }}
+  :root {{
+    --bg: #f5f5f4; --fg: #1c1917; --card: #fff; --shadow: rgba(0,0,0,.08);
+    --border: #d6d3d1; --muted: #57534e; --lbl: #64748b; --arm-bd: #e7e5e4;
+    --es-bg: #f8fafc; --es-bd: #e2e8f0; --en-bg: #eff6ff; --en-bd: #bfdbfe;
+    --tg-bg: #fafaf9; --tg-fg: #78716c;
+    --gold-bg: #fefce8; --gold-bd: #fde047;
+    --warn-bg: #fffbeb; --warn-bd: #fde68a;
+    --err-bg: #fef2f2; --err-bd: #fca5a5; --err-fg: #991b1b;
+    --btn-bg: #fff; --btn-bd: #a8a29e; --primary: #1d4ed8;
+    --done: #15803d; --todo: #b45309;
+  }}
+  @media (prefers-color-scheme: dark) {{
+    :root {{
+      --bg: #121214; --fg: #e7e5e4; --card: #1d1d20; --shadow: rgba(0,0,0,.5);
+      --border: #3f3f46; --muted: #a1a1aa; --lbl: #94a3b8; --arm-bd: #3f3f46;
+      --es-bg: #1e242a; --es-bd: #334155; --en-bg: #17203a; --en-bd: #1e3a5f;
+      --tg-bg: #1a1a1c; --tg-fg: #a8a29e;
+      --gold-bg: #2a2410; --gold-bd: #a16207;
+      --warn-bg: #2a2410; --warn-bd: #a16207;
+      --err-bg: #2a1215; --err-bd: #7f1d1d; --err-fg: #fca5a5;
+      --btn-bg: #2a2a2e; --btn-bd: #52525b; --primary: #2563eb;
+      --done: #4ade80; --todo: #fbbf24;
+    }}
+  }}
+  body {{ font-family: -apple-system, Segoe UI, sans-serif; margin: 0; background: var(--bg); color: var(--fg); }}
   .wrap {{ max-width: 880px; margin: 0 auto; padding: 16px; }}
-  .card {{ background: #fff; border-radius: 10px; padding: 18px 22px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }}
+  .card {{ background: var(--card); border-radius: 10px; padding: 18px 22px; margin-bottom: 14px; box-shadow: 0 1px 3px var(--shadow); }}
   img.eval {{ max-width: 100%; max-height: 420px; display: block; margin: 0 auto; border-radius: 6px; }}
-  .imgerr {{ background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; padding: 14px; border-radius: 6px; }}
+  .imgerr {{ background: var(--err-bg); border: 1px solid var(--err-bd); color: var(--err-fg); padding: 14px; border-radius: 6px; }}
   h1 {{ font-size: 1.15rem; }} h2 {{ font-size: 1rem; margin: 4px 0 8px; }}
   .cap {{ margin: 6px 0; padding: 10px 12px; border-radius: 6px; line-height: 1.45; }}
-  .cap-es {{ background: #f8fafc; border: 1px solid #e2e8f0; }}
-  .cap-en {{ background: #eff6ff; border: 1px solid #bfdbfe; }}
-  .cap-tg {{ background: #fafaf9; border: 1px dashed #d6d3d1; color: #78716c; font-size: .9rem; }}
-  .cap-gold {{ background: #fefce8; border: 1px solid #fde047; font-weight: 500; }}
-  .lbl {{ font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: #64748b; display: block; margin-bottom: 3px; }}
+  .cap-es {{ background: var(--es-bg); border: 1px solid var(--es-bd); }}
+  .cap-en {{ background: var(--en-bg); border: 1px solid var(--en-bd); }}
+  .cap-tg {{ background: var(--tg-bg); border: 1px dashed var(--border); color: var(--tg-fg); font-size: .9rem; }}
+  .cap-gold {{ background: var(--gold-bg); border: 1px solid var(--gold-bd); font-weight: 500; }}
+  .lbl {{ font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--lbl); display: block; margin-bottom: 3px; }}
   .dim {{ margin: 8px 0 12px; }}
   .dim b {{ display: block; margin-bottom: 4px; }}
   .dim label {{ display: block; font-size: .88rem; margin: 2px 0 2px 6px; cursor: pointer; }}
-  .arm {{ border-top: 2px solid #e7e5e4; padding-top: 10px; margin-top: 14px; }}
-  textarea {{ width: 100%; min-height: 70px; box-sizing: border-box; font: inherit; padding: 8px; border-radius: 6px; border: 1px solid #d6d3d1; }}
+  .arm {{ border-top: 2px solid var(--arm-bd); padding-top: 10px; margin-top: 14px; }}
+  textarea {{ width: 100%; min-height: 70px; box-sizing: border-box; font: inherit; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--btn-bg); color: var(--fg); }}
   .nav {{ display: flex; gap: 10px; align-items: center; justify-content: space-between; }}
-  button {{ font: inherit; padding: 8px 18px; border-radius: 6px; border: 1px solid #a8a29e; background: #fff; cursor: pointer; }}
-  button.primary {{ background: #1d4ed8; border-color: #1d4ed8; color: #fff; }}
-  .progress {{ font-variant-numeric: tabular-nums; color: #57534e; }}
-  .warn {{ background: #fffbeb; border: 1px solid #fde68a; padding: 10px 12px; border-radius: 6px; margin-top: 10px; }}
-  .done {{ color: #15803d; }} .todo {{ color: #b45309; }}
-  #gate input {{ font: inherit; padding: 8px; border-radius: 6px; border: 1px solid #d6d3d1; width: 240px; }}
+  /* Sticky top nav: Prev/Next stay reachable while the long form scrolls.
+     (Requested fix: the buttons scrolled away and Export sat where Next was
+     expected, inviting misclicks.) */
+  .nav-top {{ position: sticky; top: 8px; z-index: 10; }}
+  button {{ font: inherit; padding: 8px 18px; border-radius: 6px; border: 1px solid var(--btn-bd); background: var(--btn-bg); color: var(--fg); cursor: pointer; }}
+  button.primary {{ background: var(--primary); border-color: var(--primary); color: #fff; }}
+  button:disabled {{ opacity: .45; cursor: default; }}
+  .progress {{ font-variant-numeric: tabular-nums; color: var(--muted); }}
+  .warn {{ background: var(--warn-bg); border: 1px solid var(--warn-bd); padding: 10px 12px; border-radius: 6px; margin-top: 10px; }}
+  .done {{ color: var(--done); }} .todo {{ color: var(--todo); }}
+  #gate input {{ font: inherit; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--btn-bg); color: var(--fg); width: 240px; }}
 </style>
 </head>
 <body>
@@ -281,11 +310,13 @@ function render() {{
     `<label style="display:inline-block;margin-right:16px"><input type="radio" name="pref"
       ${{saved["preference_A_B_tie"] === v ? "checked" : ""}}
       onchange="setField('${{sid}}','preference_A_B_tie','${{v}}')"> ${{v}}</label>`).join("");
-  document.getElementById("app").innerHTML = `
-    <div class="card nav">
+  const navBar = (statusSpan) => `
       <button onclick="go(-1)" ${{idx === 0 ? "disabled" : ""}}>&larr; Prev</button>
-      <span class="progress">Item ${{idx + 1}}/${{ITEMS.length}} &nbsp;·&nbsp; ${{sid}} (${{it.language}}) &nbsp;·&nbsp; <span id="status">${{statusLine()}}</span></span>
-      <button onclick="go(1)" ${{idx === ITEMS.length - 1 ? "disabled" : ""}}>Next &rarr;</button>
+      <span class="progress">Item ${{idx + 1}}/${{ITEMS.length}} &nbsp;·&nbsp; ${{sid}} (${{it.language}}) &nbsp;·&nbsp; ${{statusSpan}}</span>
+      <button onclick="go(1)" ${{idx === ITEMS.length - 1 ? "disabled" : ""}}>Next &rarr;</button>`;
+  document.getElementById("app").innerHTML = `
+    <div class="card nav nav-top">
+      ${{navBar(`<span id="status">${{statusLine()}}</span>`)}}
     </div>
     <div class="card">
       <img class="eval" src="${{it.image_src}}"
@@ -299,6 +330,9 @@ function render() {{
       <div class="arm"><h2>Preference — better overall description of this image</h2>${{pref}}</div>
       <div class="arm"><h2>Notes (cultural errors, hallucinations, category hits/misses)</h2>
         <textarea onchange="setField('${{sid}}','notes',this.value)">${{esc(saved["notes"] || "")}}</textarea></div>
+    </div>
+    <div class="card nav">
+      ${{navBar(`<span>${{statusLine()}}</span>`)}}
     </div>
     <div class="card nav">
       <span>Autosaves locally as you go (per annotator name).</span>
@@ -315,7 +349,11 @@ function render() {{
     </div>`;
 }}
 
-function go(delta) {{ idx = Math.max(0, Math.min(ITEMS.length - 1, idx + delta)); render(); }}
+function go(delta) {{
+  idx = Math.max(0, Math.min(ITEMS.length - 1, idx + delta));
+  render();
+  window.scrollTo(0, 0);
+}}
 
 function csvQuote(v) {{
   v = String(v ?? "");
