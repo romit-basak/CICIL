@@ -85,7 +85,10 @@ image (objects, dress, practices, setting), without inventing or mislabelling it
 > *nixtamal*, *jaripeo* yes; *sorgo*, *maíz*, *vacas* no. Correctly identifying a
 > crop, animal, or generic object is **faithfulness** credit, not cultural credit;
 > otherwise a plant-identification model would earn cultural 2s. "Traditional
-> clothing" without naming anything is a bare attribution → 1.
+> clothing" without naming anything is a bare attribution → 1. Likewise
+> "typical of X culture" / "traditional X-culture object" attached to a generic
+> object is the culture-name echo in disguise — the prompt supplied X, nothing
+> was observed → still **1**, never a 2.
 
 ### 2. Image faithfulness / adequacy (0–2)
 

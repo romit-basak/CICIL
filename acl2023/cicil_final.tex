@@ -405,7 +405,9 @@ Maya      & 0 & 0  & \\
 \end{tabular}
 \caption{Cultural specificity with and without retrieval. ``Culture-name
 rate'' counts captions naming the target culture; ``concept rate'' counts
-captions naming a specific cultural concept (artifact, dance, site).}
+captions naming a specific cultural concept (artifact, dance, site). Concept
+counts are surface matches, not verified groundings---term-level inspection
+qualifies the Bribri figure in particular (\S6, RQ2).}
 \label{tab:rates}
 \end{table}
 
@@ -494,11 +496,15 @@ reductions in faithfulness.
 \paragraph{RQ2: Resource effects.}
 Resource disparities appear throughout the pipeline. Bribri has the smallest
 retrieval resources and remains difficult across all systems, yet it shows
-the largest student-side end-to-end gain under retrieval ($+1.19$ chrF++)
-alongside some of the largest gains in cultural concept rates---inverting
-the naive expectation that retrieval helps most where data is plentiful.
-Low-resource settings may benefit disproportionately when even modest
-external knowledge becomes available.
+the largest student-side end-to-end gain under retrieval ($+1.19$
+chrF++)---inverting the naive expectation that retrieval helps most where
+data is plentiful. Its apparent concept-rate gain, however, does not survive
+term-level inspection: of its $\sim$25 concept hits, 21 are retrieved
+toponyms (Yorkín, Puerto Viejo, Cahuita---one caption names a woven basket
+a ``cahuita,'' which is a town), and only \emph{cacao} is a cultural
+practice term. Low-resource settings may benefit disproportionately from
+modest external knowledge, but the benefit we can verify here is in
+reference overlap, not yet in grounded cultural naming.
 
 \paragraph{RQ3: Which cultural concepts ground reliably?}
 Artifacts and distinctive cultural objects appear most retrievable. Landscape
