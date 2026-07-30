@@ -1,0 +1,41 @@
+annotator,sample_id,language,A_cultural_accuracy,B_cultural_accuracy,A_faithfulness,B_faithfulness,A_fluency,B_fluency,preference_A_B_tie,cbir_relevance,notes
+Romit,S001,Wixárika,0,1,0,2,1,2,B,,
+Romit,S002,Wixárika,1,0,2,0,2,2,A,,
+Romit,S003,Wixárika,2,0,2,0,2,2,A,,
+Romit,S004,Wixárika,0,1,0,2,1,1,B,,
+Romit,S005,Wixárika,0,0,0,0,2,2,tie,,
+Romit,S006,Wixárika,1,1,0,1,1,2,B,,
+Romit,S007,Wixárika,1,0,1,0,2,2,A,,"The ""apron"" looks more like a skirt to me, but otherwise okay"
+Romit,S008,Wixárika,0,1,0,2,1,2,B,,
+Romit,S009,Wixárika,0,1,0,2,2,2,B,,"Does not identify the structure as a carretón, which is a legitimate cultural name for this style of stilt granaries, but absent in Wikipedia and thus did not show up in retrieval."
+Romit,S010,Wixárika,1,0,1,0,2,2,A,,
+Romit,S011,Wixárika,1,0,1,0,2,2,A,,
+Romit,S012,Wixárika,1,1,0,1,1,1,B,,"""Surrounded by"" when the clothes are there in the background is not good, also the vague ""materials"" narrows down very little"
+Romit,S013,Wixárika,0,1,0,0,2,2,B,,"Interprets the cart as ""wooden board"" and its handle as ""firewood""."
+Romit,S014,Wixárika,1,1,2,1,2,2,A,,Does not identify the fruit(green tomatillos)
+Romit,S015,Wixárika,1,0,1,0,2,2,A,,Mistakes fish for tacos
+Romit,S016,Wixárika,1,0,1,0,2,2,A,,
+Romit,S017,Wixárika,0,1,0,1,2,2,B,,"Correctly identifies sorghum, but both people are not wearing traditional clothes(the woman wears traditional, the man doesn't), also no basket."
+Romit,S018,Wixárika,0,1,0,1,2,2,B,,Looks like a donkey to me(which the model marks it as) but the gold caption seems to say horse.
+Romit,S019,Wixárika,1,0,2,0,2,2,A,,
+Romit,S020,Wixárika,1,0,2,0,2,1,A,,
+Romit,S021,Bribri,0,1,0,1,1,2,B,,"Identifies ""person"", but I think it should specifically say baby"
+Romit,S022,Bribri,0,0,0,0,2,2,tie,,
+Romit,S023,Bribri,1,1,1,2,2,2,A,,"embers in the background, not surrounding"
+Romit,S024,Bribri,0,0,0,0,2,2,tie,,
+Romit,S025,Bribri,1,0,2,0,2,2,A,,
+Romit,S026,Guaraní,1,0,2,0,2,2,A,,
+Romit,S027,Guaraní,1,0,2,0,2,2,A,,
+Romit,S028,Guaraní,0,2,0,2,2,2,B,,
+Romit,S029,Guaraní,0,1,0,2,2,2,B,,
+Romit,S030,Guaraní,1,0,2,0,2,2,A,,
+Romit,S031,Maya,0,1,0,2,2,2,B,,
+Romit,S032,Maya,1,0,2,0,2,2,A,,
+Romit,S033,Maya,1,0,2,0,2,2,A,,
+Romit,S034,Maya,1,0,2,0,2,2,A,,
+Romit,S035,Maya,0,1,0,2,2,2,B,,
+Romit,S036,Nahuatl,1,0,2,0,2,2,A,,
+Romit,S037,Nahuatl,0,1,2,2,1,2,B,,
+Romit,S038,Nahuatl,1,1,1,2,2,2,B,,"A mentions the whole landscape as mountainous, although the foreground is flat plain"
+Romit,S039,Nahuatl,1,1,2,2,2,2,B,,
+Romit,S040,Nahuatl,1,1,1,2,2,2,B,,

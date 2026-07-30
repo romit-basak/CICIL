@@ -1336,3 +1336,25 @@ model capability and not the naming policy — is now the binding constraint
 on cultural naming; three independently-discovered instances across three
 cultures. Fix direction: harvest category-driven (artifacts, cuisine,
 monuments, flora of X culture) rather than hub-article-driven.
+
+## Round-4 human eval, single-annotator preliminary (Romit, 2026-07-29 evening)
+
+40 images, 5 cultures, revised claim-based rubric. Arm means (0–2):
+
+| dimension | smolvlm-rag | agent-local | delta |
+|---|---|---|---|
+| cultural accuracy | 0.20 | 0.95 | +0.75 |
+| **faithfulness** | **0.23** | **1.52** | **+1.30** |
+| fluency | 1.82 | 1.93 | +0.10 |
+
+Preference: **agent 36/40 (90%)**, baseline 1 (2%), tie 3 (8%).
+
+Readings: (1) the baseline's faithfulness of 0.23/2 quantifies the invented-
+location epidemic (Wirikuta/Yucatán/Bolivia double-hits) — it fabricates on
+nearly every image; (2) both arms are equally FLUENT (1.82 vs 1.93) — fluent
+nonsense, which is exactly why chrF++ can't see the difference; (3) the 90%
+preference is the metric-free RQ1 answer. κ + final table await Tisha's
+pass; single-annotator caveat until then. results/human_eval_results_Romit_round4.csv.
+
+v4.6 full validation started (fully-local pilot 20 + v45-local+v46-rule
+reassembly) for the poster's before/after.
