@@ -107,6 +107,13 @@ Independent of culture: does the caption describe **what is actually in the imag
 > and a visual hallucination — do not soften either to a 1 because "it's only
 > one mistake."
 
+> **Faithfulness scope (round 4+):** faithfulness judges claims about SCENE
+> CONTENT — objects, actions, and where the scene is (which is why invented
+> locations double-hit). Attribution-only clauses ("reflects / possibly reflects
+> X culture", "typical of X") are judged ONLY on the cultural axis; they must
+> not drag faithfulness down, so faithfulness stays a clean measure of whether
+> the caption describes what is actually in the image.
+
 ### 3. Fluency (0–2)
 
 Is the text well-formed in its language?

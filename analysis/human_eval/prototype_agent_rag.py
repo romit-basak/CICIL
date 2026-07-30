@@ -312,8 +312,9 @@ FLOURISH_CLAUSE_RE = re.compile(
     r"(?:refleja|refleje|evoca|evoque|representa|represente))\s+"
     r"(?:elementos\s+de\s+)?la\s+cultura[^.!?]*", re.I)
 FLOURISH_SENTENCE_RE = re.compile(
-    r"^\s*(?:posiblemente\s+)?(?:refleja|evoca|representa)\s+(?:elementos\s+"
-    r"de\s+)?la\s+cultura", re.I)
+    r"^\s*(?:posiblemente\s+)?(?:refleja|refleje|evoca|evoque|representa|"
+    r"represente)\s+(?:elementos\s+de\s+|la\s+importancia\s+de[l]?\s+"
+    r"(?:la\s+|el\s+)?\S+\s+(?:en|para)\s+)?la\s+cultura", re.I)
 
 
 def scrub_meta(caption: str) -> str:

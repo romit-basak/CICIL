@@ -1288,3 +1288,27 @@ that the whitelist enables (not just restricts) cultural naming when the
 bank has the concept. Poster: this pair alone tells the whole story.
 (Blinding note: S028 unblinded for Romit by this analysis — scored on
 merits; slot shuffle intact elsewhere.)
+
+## v4.7 design (2026-07-29, from round-4 annotation) — claim-provenance gating for locations/attributions
+
+Romit's proposal while annotating S035: the assembler must JUSTIFY every
+location/culture claim from the transcript; a claim whose only basis is "it
+was in my prompt" gets truncated. Extends v4.5's whitelist (cultural terms)
+to locations and attribution clauses. Per the prose-doesn't-bind lesson,
+implement structurally: (1) code extracts toponyms + "cultura X" claims
+from the draft caption; (2) a justification pass maps each claim to a
+transcript line — OCR is a legitimate source (Corrientes-from-poster
+survives; Wirikuta-from-nowhere doesn't), retrieval titles alone are NOT
+(cahuita-basket, Itauguá); (3) unsupported claims dropped IN CODE. Verify
+on diagnostic cases (hch_001/hch_002 Wirikuta, grn_018 Bolivia, yua_032
+Yucatán) the way v4.6 was verified. Post-deadline; poster mention as
+"designed, pending verification" if not run by then.
+
+Also this session: third flourish-regex escapee ("Posiblemente refleje la
+importancia del maíz en la cultura...") — pattern extended (subjunctives +
+importancia-de construction, unit-tested), but round-4 captions are now
+FROZEN (no more mid-annotation re-scrubs; remaining escapees are measured
+system performance). Rubric gained the faithfulness-scope rule: attribution
+clauses judged only on the cultural axis; scene-content claims (incl.
+scene-location) own faithfulness — reconciles the invented-location
+double-hit with keeping faithfulness diagnostic.
