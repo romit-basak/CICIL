@@ -209,6 +209,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     via its English translation. The Indigenous-language captions are shown for
     reference only — do not score them. See <code>RUBRIC.md</code> for anchors and
     protocol.</p>
+    <p class="warn">Dimensions are scored independently — one fabrication can score
+    0 on more than one of them. In particular, an <b>invented location</b> (a place
+    that can't be seen or read in the image) is a 0 on <b>both</b> cultural accuracy
+    and image faithfulness.</p>
     <p><label>Your name (required): <input id="annotator" placeholder="e.g. Tisha"></label>
     <button class="primary" onclick="start()">Start / resume</button></p>
   </div>

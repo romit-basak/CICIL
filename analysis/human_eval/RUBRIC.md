@@ -90,6 +90,13 @@ Independent of culture: does the caption describe **what is actually in the imag
 | **1** | Mostly right but with a notable wrong or missing element. |
 | **2** | Faithful to the salient content of the image. A *grounded hedge* about a visible object's identity ("possibly a traditional blanket" for a clearly visible woven object) is not a fault — the uncertainty is about identity, not existence. |
 
+> **Invented-location rule:** naming a location, region, or site that cannot be
+> seen or read in the image (no legible sign, no unmistakable landmark) scores
+> **0 on both** cultural accuracy and image faithfulness. The dimensions are
+> scored independently; the same fabrication is simultaneously a cultural error
+> and a visual hallucination — do not soften either to a 1 because "it's only
+> one mistake."
+
 ### 3. Fluency (0–2)
 
 Is the text well-formed in its language?
