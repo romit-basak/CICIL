@@ -1214,3 +1214,24 @@ Poster line: "Diagnosed after submission from two annotation-round
 transcripts; three-line structural fix; verified on both diagnostic cases."
 Note for any future full rerun: v4.6 outputs must NOT replace round-4/paper
 numbers — different config, unaudited at scale.
+
+## Bribri concept-rate decomposition (2026-07-29) — the "cahuita basket" census
+
+Round-4 annotation caught a caption identifying a woven basket AS "cahuita".
+Verified: no basketry sense exists — Cahuita is the town/national park
+adjacent to Bribri territory (web-checked both directions; contrast with
+carretón, which the literature confirmed immediately). Cultural score 0
+(fabricated informative claim; place name misused as artifact name).
+
+Term-level census of the bribri smolvlm-rag dev concept hits: cacao 4,
+Yorkín 10, Puerto Viejo 8, Cahuita 7 → ~21 of ~25 hits are TOPONYMS, only
+cacao is an artifact/practice concept. The Bribri concept-rate gain (5→25)
+is mostly retrieved place names, some attached to objects with no visual
+grounding. Mirrors the Wirikuta census on the wixárika pilot.
+
+Implication for the paper's RQ2 sentence ("largest gains in cultural
+concept rates" for Bribri): the ChrF++ +1.19 stands, but the concept-rate
+part deserves softening or a footnote — the existing limitation ("concept-
+rate statistics may reflect... retrieval-induced label copying") is now
+concretely quantified. USER DECIDES whether to touch the paper (currently
+frozen); at minimum this goes on the poster next to the Wirikuta census.
