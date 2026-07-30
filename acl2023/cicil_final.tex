@@ -543,13 +543,49 @@ the answerer \citep{zhu2023chatcaptioner}; our audits show the failure
 persists even with verification in the loop, and independent witnesses are
 the natural next step.
 
+\paragraph{Case studies (Figure~\ref{fig:cases}).}
+Three images make the preceding arguments concrete. In
+Figure~\ref{fig:cases}a, the reference expects \emph{jaripeo} --- event
+knowledge no image-only system can recover --- while the retrieval-only
+baseline invents a different error entirely, relocating the corral to
+``Wirikuta, San Luis Potosí''; the interrogation arm's caption (``a group of
+animals, probably cows or oxen, in front of a wooden structure with a metal
+roof'') is the honest ceiling. Figure~\ref{fig:cases}b shows the three
+knowledge channels pulling in different directions on one image: the
+generic model's parametric prior misattributes the dress as \emph{Mexican};
+retrieval supplies the correct garment vocabulary (a \emph{typói} with
+\emph{ñandutí} lace) but drags in an invented location (Itauguá, Paraguay
+--- the ñandutí weaving center, copied from the retrieved context rather
+than the image); and the interrogation arm grounds the event from the
+poster's legible text (``Mundial de Chamamé... Corrientes, Argentina'').
+Two residual errors survive even there --- the year is misread (2013 for
+the poster's 2012), and a ``fringed shawl'' inherited from the second
+witness persists although the woman is holding her skirt --- the answerer
+self-confirmation residual made visible. In Figure~\ref{fig:cases}c the
+baseline turns a suspension footbridge into ``a central cobblestone arch, a
+Wixárika cultural and artisanal element'' in Wirikuta; the interrogation
+arm simply describes the bridge, the river, and the terrain. Across all
+three, chrF++ moves by fractions of a point.
+
 \paragraph{Gold captions describe more than the image.}
 Reading the 20 Wixárika pilot references against their images, roughly
 two-thirds contain community knowledge that is not visually discernible:
 event context (``bulls resting \emph{before the jaripeo begins}''), purpose
 (``degraining maize \emph{to make nixtamal}''), destination and cause
 (``taking her daughter \emph{to school} because the river has risen''), or
-encyclopedic usage notes. This has two consequences beyond the obvious
+encyclopedic usage notes. Not all of this gap is unbridgeable, however. One
+reference names the image's stilt structure a \emph{carretón} --- a term we
+initially suspected was an error (its standard sense is ``cart''), but which
+the ethnographic literature attests for exactly this Wixárika structure: a
+raised, thatched-roof granary on wooden posts, used to store maize and as
+sleeping quarters.\footnote{Described in ethnographic work on Wixárika
+communities of southern Durango; see e.g.\
+\url{https://www.thefreelibrary.com/Parentesco+y+relaciones+de+genero+en+una+localidad+Wixarika+(Huichol)...-a0350783750}.}
+The concept is fully visible in the image and publicly documented, yet
+absent from our Wikipedia-derived banks --- a bank \emph{coverage} ceiling
+rather than a perception limit, and a concrete argument for harvesting
+retrieval banks from ethnographic sources. This has two further
+consequences beyond the obvious
 ceiling on image-only systems. First, the reference style rewards
 \emph{fabricating} plausible context: a baseline that invents a plausible
 region name can gain overlap where honest silence cannot, so the metric
@@ -558,6 +594,34 @@ gold captions record what the community knows about a scene, not what the
 scene shows---and the principled way to close that gap is to supply real
 context (retrieval, metadata, community input) rather than to ask a vision
 model to guess it.
+
+\begin{figure*}[t]
+\centering
+\begin{minipage}[t]{0.32\textwidth}\centering
+  \includegraphics[height=5.2cm]{figures/case_hch002.jpg}\\
+  \small (a) Context beyond pixels
+\end{minipage}\hfill
+\begin{minipage}[t]{0.32\textwidth}\centering
+  \includegraphics[height=5.2cm]{figures/case_grn025.jpg}\\
+  \small (b) Three knowledge channels
+\end{minipage}\hfill
+\begin{minipage}[t]{0.32\textwidth}\centering
+  \includegraphics[height=5.2cm]{figures/case_hch001.jpg}\\
+  \small (c) Invented location
+\end{minipage}
+\caption{Case studies (\S6). (a)~The reference caption reads ``bucking bulls
+resting \emph{before the jaripeo begins}'' --- nothing in the frame
+identifies a rodeo, and the retrieval-only baseline relocates the scene to
+the sacred site Wirikuta. (b)~A Paraguayan folk dress at an Argentine
+chamamé festival: the generic model calls the dress \emph{Mexican}, the
+retrieval student names the garment correctly (\emph{typói},
+\emph{ñandutí}) but invents a location, and the interrogation arm grounds
+the event from the poster text. (c)~The baseline describes ``a cobblestone
+arch in the Wirikuta region, San Luis Potosí''; the interrogation arm
+describes the suspension footbridge that is actually there. Images:
+AmericasNLP 2026 CICIL dataset (CC~BY-NC~4.0). All translations ours.}
+\label{fig:cases}
+\end{figure*}
 
 \section{Conclusion}
 We presented a retrieval-grounded cultural image captioning pipeline for
