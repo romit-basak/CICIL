@@ -32,3 +32,10 @@ predictions/_dryrun/
 # local tool installs must never enter the repo (see 2026-07-29 history rewrite)
 google-cloud-sdk/
 *.tar.gz
+
+# LaTeX build artifacts (paper builds: keep .tex/.pdf, ignore intermediates)
+acl2023/*.aux
+acl2023/*.bbl
+acl2023/*.blg
+acl2023/*.log
+acl2023/*.out
