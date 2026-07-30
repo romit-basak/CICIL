@@ -1235,3 +1235,28 @@ part deserves softening or a footnote — the existing limitation ("concept-
 rate statistics may reflect... retrieval-induced label copying") is now
 concretely quantified. USER DECIDES whether to touch the paper (currently
 frozen); at minimum this goes on the poster next to the Wirikuta census.
+
+## grn_002 / Residentas (2026-07-29) — third carretón-class case + the misattribution archetype
+
+Round-4 image S026 = grn_002: verified as the **Monumento a Las Residentas**
+(Ñu Guasú, Asunción/Luque; Francisco Báez Rolón, 1980) — white marble, woman
+with torn flag, child taking her hand; memorial to the women who rebuilt
+Paraguay after the War of the Triple Alliance.
+
+- NOT a naming-rule limitation: the rule bars naming photographed PEOPLE; a
+  monument's name is legitimate cultural vocabulary (glossary test passes).
+- IS a bank-coverage miss (carretón class, third instance): the guarani bank
+  contains no Residentas article — even an ideal query surfaces only Flag of
+  Paraguay / Pantheon of Heroes. The v4.5 whitelist for this image offered
+  nothing applicable → honest silence was the only lawful output.
+- The baseline arm is the misattribution archetype for the ethics statement:
+  it named the memorial "don Tránsito Cocomarola" (a Corrientes chamamé
+  accordionist), male, holding "a stick", "in Corrientes, Argentina" —
+  wrong person, wrong gender, wrong country. Scored 0/0 under the rubric.
+- Poster pairing: Residentas (coverage miss, honest silence) vs Cocomarola
+  (unverified naming) is the naming-policy argument in one image.
+
+Carretón-class ledger so far: hch_009 carretón, grn_002 Residentas — both
+visible, publicly documented, absent from Wikipedia-hub banks. Future-work
+line writes itself: bank sources beyond Wikipedia hubs (ethnographic
+literature, national heritage registries).
