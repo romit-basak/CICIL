@@ -80,6 +80,13 @@ image (objects, dress, practices, setting), without inventing or mislabelling it
 > Honest silence and a bare hedged attribution both score **1** on this dimension;
 > the preference judgment is where "silence beats unfounded hedging" gets expressed.
 
+> **Glossary test (what counts as a cultural claim):** a term is cultural if it
+> would belong in a glossary of the culture — *milpa*, *typói*, *carretón*,
+> *nixtamal*, *jaripeo* yes; *sorgo*, *maíz*, *vacas* no. Correctly identifying a
+> crop, animal, or generic object is **faithfulness** credit, not cultural credit;
+> otherwise a plant-identification model would earn cultural 2s. "Traditional
+> clothing" without naming anything is a bare attribution → 1.
+
 ### 2. Image faithfulness / adequacy (0–2)
 
 Independent of culture: does the caption describe **what is actually in the image**?
