@@ -297,8 +297,9 @@ def call_gemini_raw(prompt: str, max_tokens: int = 1024) -> str:
 
 
 META_LANGUAGE_RE = re.compile(
-    r"no hay evidencia|no se observa|no se pueden? (?:identificar|determinar|ver)|"
-    r"no es posible determinar|sin evidencia de", re.I)
+    r"no hay (?:evidencia|elementos?|indicios?|se[ñn]ales?|rasgos?)|"
+    r"no se (?:observa|aprecian?)|no se pueden? (?:identificar|determinar|ver)|"
+    r"no es posible determinar|sin evidencia de|nada (?:indica|sugiere)", re.I)
 
 # Decorative culture-flourish clause, either as a whole sentence
 # ("Posiblemente refleja la cultura X.") or as a trailing participial clause
