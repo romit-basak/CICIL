@@ -1312,3 +1312,27 @@ system performance). Rubric gained the faithfulness-scope rule: attribution
 clauses judged only on the cultural axis; scene-content claims (incl.
 scene-location) own faithfulness — reconciles the invented-location
 double-hit with keeping faithfulness diagnostic.
+
+## nlv_012 / cempasúchil (2026-07-29) — coverage ledger entry #3, and the ledger becomes systematic
+
+S037 image verified: a marigold (Tagetes — layered ruffled head, pinnate
+foliage) on a NAHUATL item = the cempasúchil (Nahuatl cempohualxochitl),
+THE Day-of-the-Dead flower. Caption scored under the new axis-scope rules:
+cultural 0 (sole vocabulary claim "known as 'flor de calabaza' in Spanish"
+is wrong — that's the squash blossom), faithfulness 2 (scene content
+accurate; naming claims don't touch this axis), fluency 1 (self-
+contradiction: marigold ≠ squash flower in one sentence).
+
+Bank check: cempasúchil NOT retrievable from the nahuatl bank — ideal query
+maxes at 0.29 (below the 0.30 floor), and the neighbors are ethnic-group /
+language articles (Popoluca, Otomi, and even non-Nahua Kumeyaay, Huetar).
+
+**Coverage ledger, now 3 cultures**: carretón (wixárika granary), Monumento
+a las Residentas (guaraní), cempasúchil (nahuatl). Pattern: the Wikipedia-
+hub harvest yields ethnonyms, languages, and places, but MISSES the everyday
+cultural-vocabulary layer (granaries, monuments, culinary/ritual plants)
+that dataset images actually depict. Poster claim: bank coverage — not
+model capability and not the naming policy — is now the binding constraint
+on cultural naming; three independently-discovered instances across three
+cultures. Fix direction: harvest category-driven (artifacts, cuisine,
+monuments, flora of X culture) rather than hub-article-driven.
