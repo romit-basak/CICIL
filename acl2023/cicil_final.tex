@@ -488,6 +488,34 @@ partly reflect base variation.}
 
 The remaining gap to frontier performance is roughly 1--1.5 chrF++.
 
+\begin{figure*}[t]
+\centering
+\begin{minipage}[t]{0.32\textwidth}\centering
+  \includegraphics[height=5.2cm]{figures/case_hch002.jpg}\\
+  \small (a) Context beyond pixels
+\end{minipage}\hfill
+\begin{minipage}[t]{0.32\textwidth}\centering
+  \includegraphics[height=5.2cm]{figures/case_grn025.jpg}\\
+  \small (b) Three knowledge channels
+\end{minipage}\hfill
+\begin{minipage}[t]{0.32\textwidth}\centering
+  \includegraphics[height=5.2cm]{figures/case_hch001.jpg}\\
+  \small (c) Invented location
+\end{minipage}
+\caption{Case studies (\S6). (a)~The reference caption reads ``bucking bulls
+resting \emph{before the jaripeo begins}'' --- nothing in the frame
+identifies a rodeo, and the retrieval-only baseline relocates the scene to
+the sacred site Wirikuta. (b)~A Paraguayan folk dress at an Argentine
+chamamé festival: the generic model calls the dress \emph{Mexican}, the
+retrieval student names the garment correctly (\emph{typói},
+\emph{ñandutí}) but invents a location, and the interrogation arm grounds
+the event from the poster text. (c)~The baseline describes ``a cobblestone
+arch in the Wirikuta region, San Luis Potosí''; the interrogation arm
+describes the suspension footbridge that is actually there. Images:
+AmericasNLP 2026 CICIL dataset (CC~BY-NC~4.0). All translations ours.}
+\label{fig:cases}
+\end{figure*}
+
 \section{Analysis}
 
 \paragraph{RQ1: Does cultural grounding help?}
@@ -644,33 +672,6 @@ scene shows---and the principled way to close that gap is to supply real
 context (retrieval, metadata, community input) rather than to ask a vision
 model to guess it.
 
-\begin{figure*}[t]
-\centering
-\begin{minipage}[t]{0.32\textwidth}\centering
-  \includegraphics[height=5.2cm]{figures/case_hch002.jpg}\\
-  \small (a) Context beyond pixels
-\end{minipage}\hfill
-\begin{minipage}[t]{0.32\textwidth}\centering
-  \includegraphics[height=5.2cm]{figures/case_grn025.jpg}\\
-  \small (b) Three knowledge channels
-\end{minipage}\hfill
-\begin{minipage}[t]{0.32\textwidth}\centering
-  \includegraphics[height=5.2cm]{figures/case_hch001.jpg}\\
-  \small (c) Invented location
-\end{minipage}
-\caption{Case studies (\S6). (a)~The reference caption reads ``bucking bulls
-resting \emph{before the jaripeo begins}'' --- nothing in the frame
-identifies a rodeo, and the retrieval-only baseline relocates the scene to
-the sacred site Wirikuta. (b)~A Paraguayan folk dress at an Argentine
-chamamé festival: the generic model calls the dress \emph{Mexican}, the
-retrieval student names the garment correctly (\emph{typói},
-\emph{ñandutí}) but invents a location, and the interrogation arm grounds
-the event from the poster text. (c)~The baseline describes ``a cobblestone
-arch in the Wirikuta region, San Luis Potosí''; the interrogation arm
-describes the suspension footbridge that is actually there. Images:
-AmericasNLP 2026 CICIL dataset (CC~BY-NC~4.0). All translations ours.}
-\label{fig:cases}
-\end{figure*}
 
 \section{Conclusion}
 We presented a retrieval-grounded cultural image captioning pipeline for
