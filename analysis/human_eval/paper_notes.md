@@ -1358,3 +1358,35 @@ pass; single-annotator caveat until then. results/human_eval_results_Romit_round
 
 v4.6 full validation started (fully-local pilot 20 + v45-local+v46-rule
 reassembly) for the poster's before/after.
+
+## Was cultural retrieval an "utter failure"? The 2-availability census (2026-07-29)
+
+Romit's round-4 scores: agent earned TWO cultural 2s — S003/hch_003 (observed:
+"traje tradicional wixárika... bordados rojos y blancos"; also correctly kept
+the wheelchair) and S028/grn_018 (ñandutí, via whitelist). Baseline: zero.
+
+**2-availability census** (pilot golds as oracle + dev images audited):
+visually-recoverable, nameable cultural content existed on roughly 10–12 of
+40 items: hch_003 traje/sombrero ✓CAPTURED, hch_006 huajes, hch_009 carretón,
+hch_010 milpa, hch_020 tortillas a mano/fuego de leña, (borderline hch_007
+desgranado→nixtamal, hch_015 mojarra), grn_002 Residentas, grn_018 ñandutí
+✓CAPTURED, nlv_012 cempasúchil, nlv_016 peak (candidate Citlaltépetl — NOT
+in nahuatl bank; ID hedged, needs confirmation), yua_032 milpa. So the agent
+captured ~2 of ~10-12 available; the bank lacked most of the rest.
+
+**Three-way gap taxonomy (final form):**
+1. **Context-class** (~majority of images): cultural content exists but lives
+   in event/purpose/usage knowledge (jaripeo, remuda, school) — unbridgeable
+   from pixels by any system; supply via metadata/community text.
+2. **Coverage-class** (~8-10 items): visible + publicly documented, missing
+   from Wikipedia-hub banks (carretón, Residentas, cempasúchil, likely
+   Citlaltépetl, milpa-as-term) — bridgeable with category-driven harvest.
+3. **Recognition-class** (S039/nlv_040 bare twig): even a perfect bank can't
+   help — species-level ID from the photo exceeds non-expert HUMAN ability;
+   community plant knowledge is expert-recognitional. "Medicinal herb" would
+   be unfounded attribution; the honest generic description is correct.
+
+Answer: not an utter failure and not absent content — cultural content is
+visually recoverable on ~25-30% of items, the bank is the bottleneck there
+(2 captured where covered vs 0 baseline), and the rest is context- or
+recognition-class where honest silence IS the right output.
