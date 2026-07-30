@@ -1163,3 +1163,23 @@ Gap-class taxonomy this completes:
 Agent caption for hch_009 (post-scrub): faithful stilt-shelter description,
 cultural accuracy 1 / faithfulness 2 under the round-4 rubric — the honest
 ceiling given the bank.
+
+## grn_025 pañuelo: full mechanism from the v4.3.1 transcript (2026-07-29)
+
+The holding probe WORKED — ACTION channel: "sosteniendo el borde del mismo
+[vestido] para mostrar su diseño" (correct). The shawl re-entered elsewhere:
+2B witness base2 hallucinated "sostiene un pañuelo largo" → the questioner
+mined the witness disagreement but phrased it as a PRESUPPOSITION, citing
+the witness verbatim ("¿...como se describe en la segunda descripción?") —
+violating its own neutral-phrasing prompt rule → 7B echo-SI (rationale
+reveals the misperception: "cuelga por debajo de su vestido" = the white
+skirt) → three follow-ups elaborated the phantom (flecos SI, color
+INCIERTO, atado INCIERTO) → assembly: four confident QA affirmations
+outvoted the single direct ACTION observation despite the prompt marking
+ACTION a "hecho directo". One transcript containing both structural
+findings: prompt rules don't bind; confidence-weighted aggregation
+amplifies presupposition echoes. Candidate fix (future work, NOT before
+the deadline): witness-conflict questions must be phrased as neutral
+disjunctions in CODE ("¿sostiene un pañuelo o el borde de su falda?"), and
+the ACTION channel should be un-outvotable on what the subject is
+doing/holding. Figure 1(b) panel text updated with the mechanism.
