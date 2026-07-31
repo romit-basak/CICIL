@@ -273,19 +273,37 @@ These results indicate that visual verification appears only above a
 capability threshold.
 
 \subsection{Stage 2 Translation}
-The final Spanish description is translated using retrieval-augmented
-Gemini~2.5~Flash \citep{comanici2025gemini}.
+The final Spanish description is translated into the target language using
+retrieval-augmented Gemini~2.5~Flash \citep{comanici2025gemini}, accessed via
+Vertex AI rather than the direct API tier: the CICIL dataset's CC~BY-NC
+license prohibits use with services that train on submitted data, which the
+free-tier API does but Vertex AI does not.
 
-We index parallel corpora using multilingual MiniLM embeddings and FAISS
-\citep{johnson2019faiss} and retrieve top-$k$ Spanish--Indigenous examples.
-Retrieved pairs are supplied as demonstrations during translation.
+\paragraph{Retrieval-augmented translation.} We index five parallel
+Spanish--Indigenous corpora (Table~\ref{tab:data}) using multilingual MiniLM
+sentence embeddings \citep{reimers2020multilingual} and FAISS
+\citep{johnson2019faiss}, and retrieve the top-$k$ most similar
+Spanish--target sentence pairs for each query. Retrieved pairs are supplied
+to Gemini as in-context demonstrations before it translates the new
+sentence---the standard fix for low-resource translation, since none of the
+five target languages are well-represented in the base model's training
+data.
 
-Temperature 0.7 decoding was adopted after ablation experiments revealed
-severe degeneration under greedy decoding.
+\paragraph{Culturally-indexed vs.\ text-indexed retrieval.} We test two
+retrieval query strategies as an independent variable, holding prompt mode
+and $k$ fixed. In the \emph{text-query} arm, retrieval is keyed on the
+Spanish caption itself (surface lexical similarity). In the
+\emph{cultural-query} arm, retrieval is instead keyed on Stage~1's
+structured cultural annotations (ceremony, material culture, landscape,
+kinship), on the hypothesis that two captions can be culturally similar---and
+thus useful translation guides---even when their surface wording differs
+substantially. \S5.6 reports this comparison.
 
+Temperature 0.7 decoding with a fixed seed was adopted after ablation
+experiments revealed severe degeneration under greedy decoding (\S5.3).
 \section{Results}
 
-\subsection{Stage 1 Evaluation}
+\subsection{Stage 1 (Evaluation)}
 Using the Wixárika pilot's gold Spanish captions, we score Stage-1 Spanish
 intermediates with chrF++ \citep{popovic2017chrfpp}:
 
@@ -472,6 +490,39 @@ concept payoff. Set against the order-of-magnitude changes in cultural
 specificity, these movements are small: the metric and the behavior have
 largely decoupled.
 
+\subsection{Stage 2 (Retrieval Ablation)}
+Does it matter \emph{how} we retrieve translation examples, not just
+whether we retrieve them? We compared culturally-keyed retrieval (querying
+with Stage~1's cultural annotations) against plain text-keyed retrieval
+(querying with the Spanish caption itself), holding $k{=}5$ fixed.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+Language & Cultural & Text & $\Delta$ \\
+\midrule
+Guaraní      & 20.60 & 20.52 & $+0.08$ \\
+Bribri       & 7.18  & 7.17  & $+0.01$ \\
+Yucatec Maya & 18.54 & 19.20 & $-0.66$ \\
+Wixárika     & 13.56 & 13.69 & $-0.13$ \\
+Nahuatl      & 15.62 & 15.72 & $-0.10$ \\
+\bottomrule
+\end{tabular}
+\caption{Culturally-keyed vs.\ text-keyed retrieval query, cultural-VQA
+mode, $k{=}5$.}
+\label{tab:queryarm}
+\end{table}
+
+The answer is largely no: four of five languages show no real advantage
+for cultural retrieval, and Maya is actively worse. Retrieval depth told a
+similar story---flat across $k{=}3,5,8$ for every language except
+Wixárika, which improved steadily with deeper retrieval (13.05 $\to$
+14.40 $\to$ 15.29). So the Stage~2 story echoes Stage~1's: cultural signal
+is easy to inject but hard to turn into a measurable win, no matter which
+stage you inject it at.
+
 \subsection{Capability Ladder}
 Wixárika pilot results across system versions:
 
@@ -540,13 +591,20 @@ AmericasNLP 2026 CICIL dataset (CC~BY-NC~4.0). All translations ours.}
 
 \section{Analysis}
 
+
 \paragraph{RQ1: Does cultural grounding help?}
+
+
 Cultural prompting alone does not improve end-to-end performance. Retrieval
 substantially increases cultural specificity (Table~\ref{tab:rates}) but
 produces limited and language-dependent metric gains
 (Table~\ref{tab:endtoend}). Human evaluation suggests that cultural prompting
 yields marginally richer cultural descriptions at the cost of slight
-reductions in faithfulness.
+reductions in faithfulness. The same pattern holds at Stage~2: culturally-indexed
+retrieval does not reliably outperform plain text-based retrieval for
+translation (\S5.6), reinforcing that cultural signal is difficult to
+convert into measured metric gains regardless of which pipeline stage it is
+injected at.
 
 \paragraph{RQ2: Resource effects.}
 Resource disparities appear throughout the pipeline. Bribri has the smallest
@@ -560,6 +618,15 @@ a ``cahuita,'' which is a town), and only \emph{cacao} is a cultural
 practice term. Low-resource settings may benefit disproportionately from
 modest external knowledge, but the benefit we can verify here is in
 reference overlap, not yet in grounded cultural naming.
+
+A similar inversion appeared in Stage~2 bank construction: Wixárika's
+20-pair in-domain placeholder bank was replaced with a real, 500$\times$
+larger corpus \citep{mager2018wixarika}, yet end-to-end chrF++
+\emph{dropped} (9.82 $\to$ 8.22). The real corpus is narrative
+register (folk tales) rather than caption-style text, so at $k{=}5$ it
+retrieves fluent but irrelevant examples---echoing the winning 2026
+submission's finding that retrieval helps only when the corpus is both
+large \emph{and} in-domain \citep{dhawan2026gators}.
 
 \paragraph{RQ3: Which cultural concepts ground reliably?}
 Artifacts and distinctive cultural objects appear most retrievable. Landscape
@@ -735,6 +802,13 @@ definitive correctness.
 Fifth, gold captions frequently contain nonvisual contextual knowledge
 (\S6), which imposes a structural ceiling on image-only captioning systems
 and complicates reference-based evaluation.
+
+Sixth, Stage~2's retrieval banks vary widely in domain match to the
+captioning task (from narrative folk tales to purpose-built caption
+corpora), and we did not systematically audit retrieved translation
+examples the way Stage~1's retrieval was audited --- the query-arm and
+depth ablations establish that retrieval strategy matters, but not
+which specific retrieved examples helped or hurt in any given translation.
 
 Finally, we did not conduct target-language human evaluation due to the
 absence of available native-speaker annotators during the project period.
