@@ -61,7 +61,10 @@ raising culture-name rates from near-zero to 18--37 of 50 dev captions
 small and inconsistent. Through human evaluation, retrieval audits, decoding
 ablations, and extensive qualitative analysis, we show that standard
 reference-based metrics are largely insensitive to cultural correctness,
-hallucinations, retrieval-induced errors, and faithfulness improvements. We
+hallucinations, retrieval-induced errors, and faithfulness improvements ---
+while in a blinded two-annotator evaluation across all five languages, the
+verified local system is preferred over the retrieval baseline on 82\% of
+image pairs (cultural-accuracy $\kappa = 0.79$). We
 further demonstrate that verification ability is capability-gated: a 2B model
 fails as a verifier even under closed questioning, while a local 7B model
 reliably distinguishes true from false claims. Our results suggest that
@@ -345,13 +348,50 @@ cultural preferred 27\%, generic preferred 13\%.}
 \label{tab:human}
 \end{table}
 
-% TODO-TONIGHT: round-4 human eval (40 images, 5 cultures, two annotators,
-% baseline vs agent-local v4.5 finals) + inter-annotator kappa land tomorrow
-% morning — add a second human-eval table here.
-
 The main conclusion is that cultural prompting alone generates slightly more
 cultural content but remains largely indistinguishable from generic
 captioning.
+
+\paragraph{Main human evaluation (two annotators).}
+The main evaluation compares the fully-local interrogation arm (v4.5
+outputs) against the retrieval baseline on 40 blinded image pairs spanning
+all five cultures --- the 20 gold-Spanish Wixárika pilot images plus a
+seeded sample of five dev images per remaining culture --- scored
+independently by two annotators under a revised, claim-based cultural
+rubric (correct informative claim beyond the given culture name = 2; no
+false claims = 1; fabricated claims = 0; invented locations score 0 on both
+cultural accuracy and faithfulness).
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+Dimension & Interrog. & Baseline & $\kappa$ (raw) \\
+\midrule
+Cultural accuracy & \textbf{0.94} & 0.19 & 0.79 (91\%) \\
+Faithfulness      & \textbf{1.55} & 0.50 & 0.55 (46\%) \\
+Fluency           & 1.91 & 1.75 & $-0.01$ (72\%) \\
+\bottomrule
+\end{tabular}
+\caption{Main human evaluation (40 items $\times$ 2 annotators; means on
+0--2). $\kappa$ = quadratically-weighted Cohen's kappa, with raw percent
+agreement in parentheses. The fluency $\kappa$ is a degenerate-marginals
+artifact: both arms are nearly always fluent, so chance agreement dominates
+despite 72\% raw agreement; faithfulness disagreements are almost all
+adjacent (1 vs.\ 2), hence moderate $\kappa$ at 46\% exact agreement.}
+\label{tab:human4}
+\end{table}
+
+Of 80 preference judgments, annotators preferred the interrogation arm on
+66 (82\%), the baseline on 4 (5\%), with 10 ties (12\%); the two annotators
+agreed on 31 of 40 item-level preferences (78\%). The score distributions
+carry the analysis of \S6 into human judgment: the baseline's 0.19 cultural
+mean reflects fabrication (the Wirikuta and Cocomarola class), while the
+interrogation arm's 0.94 is built from honest-silence 1s plus two verified
+2s --- an observed Wixárika \emph{traje} and the retrieval-whitelisted
+\emph{ñandutí} --- matching the concept-availability census: correct
+naming occurred exactly where the bank covered a visible concept.
 
 \subsection{Decoding Ablation}
 Greedy decoding created severe repetition loops:

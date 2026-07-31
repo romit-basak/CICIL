@@ -1415,3 +1415,14 @@ independent-witness future-work line stands as the last open door.
 Poster arc final form: two annotation-round finds → transcript mechanism →
 three-line structural fix → 2/2 diagnostic → full-run validation (0/40
 citations, 0 fabrications, hch_013 fixed, ChrF++ unharmed).
+
+## Round 4 FINAL (two annotators, 2026-07-31) — in the paper
+
+Per-arm means (80 judgments): cultural 0.94 vs 0.19; faithfulness 1.55 vs
+0.50; fluency 1.91 vs 1.75. Preference: interrogation 66/80 (82%), baseline
+4 (5%), tie 10 (12%); item-level preference agreement 31/40 (78%).
+Agreement: cultural κ=0.79 (91% raw) — the revised claim-based rubric held
+across annotators; faithfulness κ=0.55 (46% raw, disagreements almost all
+adjacent 1v2); fluency κ=-0.01 at 72% raw = degenerate-marginals artifact,
+explained in the table caption. Abstract updated with the 82%/κ=0.79
+headline. Body ends p8 exactly (refs p9-10).
