@@ -106,10 +106,9 @@ Our contributions are:
     primary constraint on cultural naming.
   \item A capability analysis showing that verification emerges only above a
     minimum model scale.
-  \item An empirical demonstration that chrF++ fails to reflect many
-    important dimensions of cultural caption quality.
-  \item Extensive qualitative analysis of retrieval failures, hallucinations,
-    calibration behavior, and evaluation limitations.
+  \item An empirical demonstration, through extensive qualitative analysis
+    of retrieval failures and hallucinations, that chrF++ fails to reflect
+    many important dimensions of cultural caption quality.
 \end{itemize}
 
 \section{Related Work}
@@ -147,11 +146,6 @@ experiments, even a 7B teacher model rarely names cultures unaided, while
 retrieval dramatically increases culture naming rates. This suggests that
 cultural knowledge is not merely missing from smaller models but is
 insufficiently accessible even in larger ones.
-
-A key insight from our findings is that retrieval quality and retrieval usage
-are distinct. We observed examples where retrieval correctly retrieved
-relevant cultural material but the model copied irrelevant metadata instead
-of grounding itself in the image.
 
 \subsection{Interrogation and Verification}
 Our retrieval-grounded interrogation loop follows the ChatCaptioner family of
@@ -327,38 +321,20 @@ Concise cultural prompting reaches parity with generic captioning while
 reducing internal inconsistencies.
 
 \subsection{Human Evaluation}
-Single-annotator results over 15 images (0--2 rubric per dimension), judged
-on English pivot translations of the Spanish captions
-\citep{hendy2023gpt,kocmi2023wmt}:
-
-\begin{table}[h]
-\centering
-\small
-\begin{tabular}{lrr}
-\toprule
-Dimension & Generic & Cultural \\
-\midrule
-Cultural accuracy & 0.00 & 0.13 \\
-Faithfulness      & 1.73 & 1.53 \\
-Fluency           & 1.93 & 1.87 \\
-\bottomrule
-\end{tabular}
-\caption{Human evaluation of Stage-1 arms. Preference outcomes: tie 60\%,
-cultural preferred 27\%, generic preferred 13\%.}
-\label{tab:human}
-\end{table}
-
-The main conclusion is that cultural prompting alone generates slightly more
-cultural content but remains largely indistinguishable from generic
-captioning.
+A preliminary single-annotator round over 15 images (0--2 rubric per
+dimension), judged on English pivot translations of the Spanish captions
+\citep{hendy2023gpt,kocmi2023wmt}, found the prompting-only arms largely
+indistinguishable: cultural accuracy 0.00 (generic) vs.\ 0.13 (cultural),
+faithfulness 1.73 vs.\ 1.53, fluency 1.93 vs.\ 1.87, with ties on 60\% of
+preference judgments. Cultural prompting alone generates slightly more
+cultural content but no measurable quality gain.
 
 \paragraph{Main human evaluation (two annotators).}
 The main evaluation compares the fully-local interrogation arm (v4.5
-outputs) against the retrieval baseline on 40 blinded image pairs spanning
-all five cultures --- the 20 gold-Spanish Wixárika pilot images plus a
-seeded sample of five dev images per remaining culture --- scored
-independently by two annotators under a revised, claim-based cultural
-rubric (correct informative claim beyond the given culture name = 2; no
+outputs) against the retrieval baseline on 40 blinded pairs across all five
+cultures (the 20 Wixárika pilot images plus five seeded dev images per
+remaining culture), scored independently by two annotators under a revised,
+claim-based cultural rubric (correct informative claim beyond the given culture name = 2; no
 false claims = 1; fabricated claims = 0; invented locations score 0 on both
 cultural accuracy and faithfulness).
 
@@ -394,26 +370,10 @@ interrogation arm's 0.94 is built from honest-silence 1s plus two verified
 naming occurred exactly where the bank covered a visible concept.
 
 \subsection{Decoding Ablation}
-Greedy decoding created severe repetition loops:
-
-\begin{table}[h]
-\centering
-\small
-\begin{tabular}{lrr}
-\toprule
-Language & Degen.\ before & Degen.\ after \\
-\midrule
-Bribri   & 64\% & 28\% \\
-Wixárika & 86\% & 30\% \\
-\bottomrule
-\end{tabular}
-\caption{Degenerate-caption rate under greedy decoding (before) vs
-temperature 0.7 with fixed seed (after), 50 dev images per language.}
-\label{tab:decoding}
-\end{table}
-
-Switching to temperature-based sampling reduced degeneration dramatically and
-improved chrF++ without harming stronger languages.
+Greedy decoding created severe repetition loops: 64\% of Bribri and 86\% of
+Wixárika dev captions degenerated. Temperature 0.7 with a fixed seed cut
+degeneration to 28\% and 30\% respectively and improved chrF++ without
+harming the languages that were already stable.
 
 \subsection{Retrieval Results}
 Retrieval dramatically increases explicit cultural references
@@ -550,12 +510,10 @@ $^{*}$The Verify-RAG score is inflated for the wrong reason: its 2B verifier
 accepted every claim (\S4.4), so its gain reflects longer, more assertive
 captions, not verification. ``Agent final'' applies the strictest
 aggregation policy (retrieval-whitelisted naming, decorative-flourish
-removal); its drop below v4.3.1 is largely a metric artifact---removing
-decorative mentions of the culture also removes tokens shared with
-references that name it. $^{\ddagger}$v4.6 fixes an aggregation mechanism
-diagnosed during human evaluation (\S6); the human-eval numbers use v4.5
-outputs. Base captions are resampled per run, so cross-run differences
-partly reflect base variation.}
+removal); its drop below v4.3.1 is largely a metric artifact (removing
+decorative culture mentions removes tokens shared with references).
+$^{\ddagger}$v4.6 = the post-evaluation fix (\S6); human-eval numbers use
+v4.5 outputs. Base captions are resampled per run.}
 \label{tab:ladder}
 \end{table}
 
@@ -598,9 +556,9 @@ AmericasNLP 2026 CICIL dataset (CC~BY-NC~4.0). All translations ours.}
 Cultural prompting alone does not improve end-to-end performance. Retrieval
 substantially increases cultural specificity (Table~\ref{tab:rates}) but
 produces limited and language-dependent metric gains
-(Table~\ref{tab:endtoend}). Human evaluation suggests that cultural prompting
-yields marginally richer cultural descriptions at the cost of slight
-reductions in faithfulness. The same pattern holds at Stage~2: culturally-indexed
+(Table~\ref{tab:endtoend}). Human evaluation shows marginally richer
+cultural descriptions at slight cost to faithfulness. The same pattern
+holds at Stage~2: culturally-indexed
 retrieval does not reliably outperform plain text-based retrieval for
 translation (\S5.6), reinforcing that cultural signal is difficult to
 convert into measured metric gains regardless of which pipeline stage it is
@@ -642,8 +600,7 @@ fabrication channel that produced the baseline's Wirikuta attributions,
 with the whitelist now supplying the labels. Cultural naming should
 therefore stay gated on visually checkable features, and site
 identification should come from metadata or legible text rather than
-visual resemblance. This finding motivated stricter auditing procedures and
-highlights the danger of equating concept naming with genuine grounding.
+visual resemblance.
 
 \paragraph{What the metric cannot see.}
 Across the interrogation arm's development we closed six distinct
@@ -668,9 +625,9 @@ base-caption detail can launder that detail into a ``verified'' claim
 (the answerer confirms the presupposition rather than checking it);
 one-word verdicts can contradict their own rationales, and assembly that
 trusts verdicts over rationales inherits the error; and the answer channel
-can inject fabricated cultural vocabulary that retrieval never supplied---in
-one out-of-domain probe the answerer invented a garment name that does not
-exist, which the assembler then asserted as fact. Each class was fixed
+can inject fabricated cultural vocabulary that retrieval never supplied (in
+one probe the answerer invented a nonexistent garment name, which the
+assembler asserted as fact). Each class was fixed
 structurally (question phrasing constraints, rationale-over-verdict
 aggregation, and restricting cultural naming to retrieved vocabulary)
 rather than by adding prompt instructions, which we found do not reliably
@@ -696,40 +653,32 @@ retrieval supplies the correct garment vocabulary (a \emph{typói} with
 --- the ñandutí weaving center, copied from the retrieved context rather
 than the image); and the interrogation arm grounds the event from the
 poster's legible text (``Mundial de Chamamé... Corrientes, Argentina'').
-Two residual errors survive even there. The year is misread (2013 for the
-poster's 2012), and a phantom ``fringed shawl'' persists although the
-direct action probe answered correctly (``holding the edge of her dress'')
---- the second witness hallucinated the shawl, the questioner asked about
-it \emph{as a presupposition} (``as described in the second
-description...''), violating its own neutral-phrasing rule, the answerer
-echo-confirmed it across three follow-ups, and at assembly four confident
-affirmations outvoted the one correct direct observation. The transcript
-compresses our two structural findings into one image: prompt rules do not
-reliably bind, and confidence-weighted aggregation amplifies presupposition
-echoes. In Figure~\ref{fig:cases}c the
+Two residual errors survive even there: a misread year (2013 for the
+poster's 2012), and a phantom ``fringed shawl'' inherited from the second
+witness through presupposition-phrased questions whose confident
+affirmations outvoted the correct action channel (``holding the edge of
+her dress'') --- the mechanism the next paragraph dissects and fixes.
+In Figure~\ref{fig:cases}c the
 baseline turns a suspension footbridge into ``a central cobblestone arch, a
 Wixárika cultural and artisanal element'' in Wirikuta; the interrogation
 arm simply describes the bridge, the river, and the terrain. Across all
 three, chrF++ moves by fractions of a point.
 
 \paragraph{From annotation to fix (v4.6).}
-The shawl mechanism above was diagnosed \emph{during} human evaluation,
-from the transcripts of two annotated items --- it is one mechanism with
-two instances (the second renders a metal wheelbarrow as ``a wooden board''
-and ``firewood'' although the action channel had said ``garden cart''). We
-fixed it structurally rather than with prompt instructions: witness
-citations are stripped from generated questions in code; witness conflicts
-must be posed as neutral disjunctions (``a shawl, or the edge of her
-skirt?''); and the observed-action channel is made un-outvotable on what
-the subject is doing or holding. On both diagnostic items the phantom
-object disappears and the correct reading survives, and on a full rerun of
-the pilot the citation rate is 0 of 40 generated questions, no cultural
-concepts or decorative flourishes are fabricated, and chrF++ is unchanged
-(21.5--22.0; Table~\ref{tab:ladder}). All human-evaluation numbers in this
-paper were collected on the earlier v4.5 outputs the annotators saw; we
-report the fix separately rather than re-annotating, both to preserve
-blinding and because the diagnosis is itself a product of the audit-based
-evaluation this paper advocates.
+The shawl mechanism was diagnosed \emph{during} human evaluation, from the
+transcripts of two annotated items (the second renders a metal wheelbarrow
+as ``a wooden board'' and ``firewood'' although the action channel had said
+``garden cart''). We fixed it structurally: witness citations are stripped
+from generated questions in code, witness conflicts must be posed as
+neutral disjunctions (``a shawl, or the edge of her skirt?''), and the
+observed-action channel is made un-outvotable on what the subject is doing
+or holding. Both diagnostic items are corrected, and a full pilot rerun
+shows 0 witness citations in 40 questions, no fabricated concepts or
+flourishes, and unchanged chrF++ (21.5--22.0; Table~\ref{tab:ladder}). All
+human-evaluation numbers were collected on the earlier v4.5 outputs the
+annotators saw; we report the fix separately rather than re-annotating ---
+the diagnosis is itself a product of the audit-based evaluation this paper
+advocates.
 
 \paragraph{Gold captions describe more than the image.}
 Reading the 20 Wixárika pilot references against their images, roughly
@@ -748,18 +697,15 @@ communities of southern Durango; see e.g.\
 The concept is fully visible in the image and publicly documented, yet
 absent from our Wikipedia-derived banks --- a bank \emph{coverage} ceiling
 rather than a perception limit, and a concrete argument for harvesting
-retrieval banks from ethnographic sources (an argument that holds for
-feature-checkable artifacts like this one, but not for sites and
-landscapes; see the RQ3 discussion). This has two further
-consequences beyond the obvious
-ceiling on image-only systems. First, the reference style rewards
-\emph{fabricating} plausible context: a baseline that invents a plausible
-region name can gain overlap where honest silence cannot, so the metric
-points away from faithfulness. Second, it reframes the task itself: the
-gold captions record what the community knows about a scene, not what the
-scene shows---and the principled way to close that gap is to supply real
-context (retrieval, metadata, community input) rather than to ask a vision
-model to guess it.
+retrieval banks from ethnographic sources (for feature-checkable artifacts
+like this one; sites and landscapes are bounded by the RQ3 asymmetry). Two
+further consequences follow. First, the reference style rewards
+\emph{fabricating} plausible context: an invented region name can gain
+overlap where honest silence cannot, so the metric points away from
+faithfulness. Second, the gold captions record what the community knows
+about a scene, not what the scene shows --- and the principled way to close
+that gap is to supply real context (retrieval, metadata, community input)
+rather than to ask a vision model to guess it.
 
 
 \section{Conclusion}
@@ -778,8 +724,6 @@ trustworthy contextual knowledge rather than encouraging plausible cultural
 guessing.
 
 \section*{Limitations}
-This work has several limitations.
-
 First, reference-based metrics are largely insensitive to cultural
 correctness. Multiple faithfulness improvements, hallucination fixes, and
 verification gains produced almost no change in chrF++. Conversely,
@@ -789,14 +733,13 @@ Second, cultural attribution is inherently underdetermined from image
 evidence alone. Many images require contextual priors that are unavailable
 from pixels.
 
-Third, retrieval quality remains an open problem. Manual inspection revealed
-that many medium-confidence retrievals matched scene categories rather than
-specific cultural artifacts. Concept-rate statistics may therefore reflect a
-mixture of genuine grounding and retrieval-induced label copying.
+Third, retrieval quality remains an open problem: many medium-confidence
+retrievals matched scene categories rather than specific cultural
+artifacts, so concept-rate statistics mix genuine grounding with
+retrieval-induced label copying.
 
-Fourth, our human evaluation was conducted by researchers who were neither
-community members nor speakers of the target languages. Cultural judgments
-should therefore be interpreted as measurements of specificity rather than
+Fourth, our human evaluators were neither community members nor speakers of
+the target languages; cultural judgments therefore measure specificity, not
 definitive correctness.
 
 Fifth, gold captions frequently contain nonvisual contextual knowledge
@@ -810,26 +753,23 @@ examples the way Stage~1's retrieval was audited --- the query-arm and
 depth ablations establish that retrieval strategy matters, but not
 which specific retrieved examples helped or hurt in any given translation.
 
-Finally, we did not conduct target-language human evaluation due to the
-absence of available native-speaker annotators during the project period.
+Finally, no target-language human evaluation was possible: no
+native-speaker annotators were available during the project period.
 
 \section*{Ethics Statement}
 Our goal is to support Indigenous-language technology without replacing
 community expertise. Generated captions are not authoritative cultural
-interpretations and should not be deployed in community-facing contexts
-without review by native and heritage speakers.
+interpretations and must not be deployed in community-facing contexts
+without native- and heritage-speaker review.
 
-We adopt a conservative policy that prohibits naming photographed individuals
-unless their identity is explicitly present in visible image text. This
-decision follows observed cases where retrieval systems incorrectly attached
-real cultural figures to unrelated individuals.
+We never name photographed individuals unless the identity appears in the
+image's own legible text --- a policy adopted after observing retrieval
+attach real cultural figures to unrelated individuals.
 
-All datasets and retrieval sources were used according to their published
-licenses. Image retrieval collections were harvested only from appropriately
-licensed Wikimedia Commons content, and translation was performed through a
-paid-tier API configuration compatible with CICIL licensing requirements.
-The Maya retrieval bank uses the YUA-ES Communicative Contexts Corpus
-\citep{molina2026yuaes}, cited per its release requirements.
+All data were used per their published licenses: image collections come
+only from suitably licensed Wikimedia Commons content, translation ran
+through a license-compatible paid tier (\S4.5), and the YUA-ES corpus
+\citep{molina2026yuaes} is cited as its release requires.
 
 \bibliography{custom}
 \bibliographystyle{acl_natbib}
