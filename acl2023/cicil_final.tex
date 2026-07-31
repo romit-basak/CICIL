@@ -33,44 +33,26 @@ A Retrieval-Grounded and Verification-Oriented Vision-to-Translation Pipeline}
 \maketitle
 
 \begin{abstract}
-Generic vision--language models (VLMs) frequently fail to preserve culturally
-specific information present in images, creating a bottleneck for multilingual
-image captioning systems targeting Indigenous languages. In the AmericasNLP
-2026 Cultural Image Captioning for Indigenous Languages (CICIL) shared task,
-captions are generated directly in Indigenous languages of the Americas from
-culturally situated images. Existing systems typically generate an
-intermediate Spanish caption with a generic VLM and then translate it using
-retrieval-augmented language models, but culturally salient visual concepts
-are often lost before translation begins. We investigate whether
-retrieval-grounded cultural reasoning can improve this stage.
-
-We present a two-stage captioning pipeline that augments vision processing
-with cultural retrieval and verification. Stage~1 uses structured cultural
-visual question answering (VQA), Wikipedia-derived retrieval, and a
-retrieval-grounded interrogation loop inspired by caption-questioning
-frameworks. Retrieved cultural hypotheses are verified through closed visual
-questions before being incorporated into Spanish descriptions. Stage~2
-performs culturally indexed retrieval over parallel corpora and translates
-the Spanish intermediate into the target language using Gemini~2.5~Flash.
-
-Across five Indigenous languages (Guaraní, Bribri, Yucatec Maya, Wixárika,
-and Nahuatl), retrieval substantially increases explicit cultural references,
-% FIXED: was "18–39"; student arm range is 18–37/50, teacher 29–38/50
-raising culture-name rates from near-zero to 18--37 of 50 dev captions
-(29--38 for a 7B teacher). However, corresponding chrF++ improvements are
-small and inconsistent. Through human evaluation, retrieval audits, decoding
-ablations, and extensive qualitative analysis, we show that standard
-reference-based metrics are largely insensitive to cultural correctness,
-hallucinations, retrieval-induced errors, and faithfulness improvements ---
-while in a blinded two-annotator evaluation across all five languages, the
-verified local system is preferred over the retrieval baseline on 82\% of
-image pairs (cultural-accuracy $\kappa = 0.79$). We
-further demonstrate that verification ability is capability-gated: a 2B model
-fails as a verifier even under closed questioning, while a local 7B model
-reliably distinguishes true from false claims. Our results suggest that
-culturally grounded captioning is constrained less by translation quality
-than by cultural retrieval, verification capacity, and evaluation
-methodology.
+Generic vision--language models discard culturally specific visual
+information before translation begins --- a structural weakness of the
+two-stage (caption-then-translate) systems that dominate the AmericasNLP
+2026 shared task on Cultural Image Captioning for Indigenous Languages
+(CICIL). We present a pipeline that supplies cultural knowledge at
+inference time and verifies it before use: culture-specific Wikipedia
+retrieval proposes concepts, a retrieval-grounded interrogation loop tests
+them against the image with closed visual questions, and only verified
+content enters the Spanish intermediate that a retrieval-augmented
+translator renders into the target language. Across five languages
+(Guaraní, Bribri, Yucatec Maya, Wixárika, Nahuatl), retrieval raises
+culture-name rates from near zero to 18--37 of 50 captions, yet chrF++
+barely moves: reference-based metrics prove largely blind to cultural
+correctness, hallucination, and faithfulness. In a blinded two-annotator
+evaluation, the fully local verified system is preferred over the retrieval
+baseline on 82\% of image pairs (cultural-accuracy $\kappa=0.79$).
+Verification itself is capability-gated: a 2B model accepts every claim it
+is asked, while a local 7B verifier reliably rejects false ones. Culturally
+grounded captioning is constrained less by translation quality than by
+retrieval coverage, verification capacity, and evaluation methodology.
 \end{abstract}
 
 \section{Introduction}
