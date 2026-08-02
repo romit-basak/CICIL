@@ -1455,3 +1455,29 @@ USP: Qwen3-VL-8B captions -> fine-tuned NLLB-200-distilled-600M per language
 Poster line: "External replication -- USP's own submission shows ChrF++
 penalizing exactly the choice (fine-tuning for cultural coverage) that
 human judges rewarded."
+
+## NordicsAlps (AmericasNLP 2024 MT, verified full paper, 2026-08-01)
+
+BPE-MR: 300 BPE merges/language (vocab ~1.2k src/5.9k tgt) vs standard 32k
+SentencePiece. Grounded in near-maximal-compression BPE stats (Gutierrez-
+Vasques et al. 2021): monolingual BPE maximally compresses in 200-350
+merges; AT that point, cross-language entropy converges, making
+typologically different languages more comparable -> better cross-lingual
+transfer from the Spanish-English pretrain phase.
+
+4/5 of OUR languages appear in this shared task (Bribri, Guarani, Nahuatl,
+Wixarika -- not Maya). Per-lang chrF++ test results (rank): Wixarika 27.64
+[1st], Nahuatl 22.87 [1st], Bribri 23.32 [4th, top-6 within 1pt], Guarani
+36.23 [5th, -2.7 vs leader]. NOT a uniform win.
+
+Connects to USP finding (logged above): NordicsAlps' own related-work cites
+FIXED PRETRAINED VOCABULARY as "an important obstacle to cross-lingual
+transfer" (Rust et al. 2021) -- exactly what NLLB-200's ~256k fixed
+SentencePiece vocab imposes on fine-tuning. Part of USP's fine-tuned-NLLB
+ChrF loss may be this tokenization-mismatch obstacle, not purely the
+cultural-coverage tradeoff -- NordicsAlps only solved it by training a
+custom small vocab FROM SCRATCH (bigger lift than fine-tuning a checkpoint).
+
+Not applicable to our own Stage 2 as built (frozen Gemini + retrieval, no
+vocabulary to retrain) -- only relevant if the NLLB-200 stretch goal is
+pursued with a from-scratch tokenizer rather than NLLB's own.
