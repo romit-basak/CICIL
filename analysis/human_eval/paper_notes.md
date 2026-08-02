@@ -1426,3 +1426,32 @@ across annotators; faithfulness κ=0.55 (46% raw, disagreements almost all
 adjacent 1v2); fluency κ=-0.01 at 72% raw = degenerate-marginals artifact,
 explained in the table caption. Abstract updated with the 82%/κ=0.79
 headline. Body ends p8 exactly (refs p9-10).
+
+## External validation, post-submission (2026-08-01): USP's AmericasNLP 2026 submission replicates the metric-blindness finding
+
+Verified via ACL Anthology (2026.americasnlp-6.25) + GitHub (rmaacario/americasnlp2026-usp).
+USP: Qwen3-VL-8B captions -> fine-tuned NLLB-200-distilled-600M per language
+(Guarani/Wixarika/Nahuatl/Bribri).
+
+- On Guarani dev: base NLLB 19.49 ChrF++ > fine-tuned NLLB 17.57 ChrF++ --
+  fine-tuning LOST on the automatic metric. They submitted the fine-tuned
+  version anyway (bet: better cultural coverage) -> 3rd/8 in Guarani HUMAN
+  eval. Independent team, actual competition, same inversion our capability
+  ladder shows (Verify-RAG +2 ChrF for the wrong reason; flourish removal
+  -0.6 ChrF for the right reason). Cite as external replication.
+- NLLB-200-distilled-600M "silently lacks vocabulary entries for Bribri and
+  Yucatec Maya, producing English output without error" -- confirms (more
+  strongly than suspected) that NLLB-200 lacks real coverage for our
+  lower-resource languages; kills "fine-tuned NLLB as a decorrelated Stage-2
+  round-trip verifier" (discussed as future work) for at least 2/5 languages
+  before the error-correlation question even arises.
+- CICIL eval protocol confirmed: ChrF++ ranks all systems -> top-5/language
+  get human eval "according to a fixed set of criteria" (judge identity/
+  native-speaker status NOT found in accessible text -- worth a direct PDF
+  read if this matters for a presentation Q&A). AmericasNLP 2024 (MT-only,
+  mature, 11 languages) ran human eval for exactly ONE language (Bribri) --
+  the native-speaker-evaluation gap is field-wide, not CICIL-specific.
+
+Poster line: "External replication -- USP's own submission shows ChrF++
+penalizing exactly the choice (fine-tuning for cultural coverage) that
+human judges rewarded."
